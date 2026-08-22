@@ -1,23 +1,23 @@
 ---
 const navLinks = [
-	{ label: 'Home', href: '/' },
-	{ label: 'About', href: '/about' },
-	{ label: 'Events', href: '/events' },
-	{ label: 'Gallery', href: '/gallery' },
-	{ label: 'Contact', href: '/contact' },
+	{ label: 'Catálogo', href: '/catalogo' },
+	{ label: 'Contacto', href: '/contacto' },
 ];
 ---
 
 <header class="border-b border-gray-200 bg-white">
 	<div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-		<a href="/" class="text-lg font-semibold text-gray-900">Auto Club</a>
+		<a href="/" class="flex items-center gap-3 text-lg font-semibold text-gray-900">
+			<img src="/logo.svg" alt="Logo de AutoClub Trackdays" width="32" height="32" class="h-8 w-8" />
+			<span>AutoClub Trackdays</span>
+		</a>
 
-		<nav aria-label="Main">
+		<nav aria-label="Principal">
 			<ul class="flex items-center gap-6">
 				{
 					navLinks.map((link) => (
 						<li>
-							<a href={link.href} class="text-sm text-gray-600 hover:text-gray-900">
+							<a href={link.href} class="text-gray-600 hover:text-gray-900 uppercase">
 								{link.label}
 							</a>
 						</li>
