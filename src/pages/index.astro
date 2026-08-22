@@ -1,17 +1,12 @@
 ---
-
+import Layout from '../layouts/Layout.astro';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout title="Auto Club">
+	<section class="mx-auto max-w-6xl px-6 py-16">
+		<h1 class="text-3xl font-semibold text-gray-900">Auto Club</h1>
+		<p class="mt-4 max-w-2xl text-gray-600">
+			Placeholder content. The header and footer are in place; page sections go here.
+		</p>
+	</section>
+</Layout>
