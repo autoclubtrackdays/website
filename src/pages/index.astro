@@ -1,13 +1,62 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import CocheCard from '../components/CocheCard.astro';
+
+const ubicacion = 'Calle de Ejemplo 00, 28000 Madrid';
+
+// Datos de ejemplo hasta que exista el catálogo real.
+const destacados = [
+	{ modelo: 'Audi A4 Avant 2.0 TDI', precio: 21900, anio: 2019, km: 78000, combustible: 'Diésel', cambio: 'Automático' },
+	{ modelo: 'BMW Serie 3 320i', precio: 24500, anio: 2020, km: 54000, combustible: 'Gasolina', cambio: 'Automático' },
+	{ modelo: 'Volkswagen Golf 1.5 TSI', precio: 18400, anio: 2021, km: 42000, combustible: 'Gasolina', cambio: 'Manual' },
+	{ modelo: 'Mercedes Clase A 180d', precio: 22750, anio: 2019, km: 65000, combustible: 'Diésel', cambio: 'Automático' },
+];
 ---
 
 <Layout title="AutoClub Trackdays">
-	<section class="mx-auto max-w-6xl px-6 py-16">
-		<h1 class="text-3xl font-semibold text-gray-900">AutoClub Trackdays</h1>
-		<p class="mt-4 max-w-2xl text-gray-600">
-			Contenido de ejemplo. La cabecera y el pie de página ya están listos; las secciones de la
-			página van aquí.
-		</p>
+	<!-- Foto de ejemplo (Unsplash, 1920x800). Sustituir por una propia. -->
+	<section
+		class="relative flex min-h-105 items-center bg-gray-800 bg-cover bg-center lg:aspect-12/5 lg:min-h-0"
+		style="background-image: url('/hero.jpg')"
+	>
+		<div class="absolute inset-0 bg-black/55"></div>
+
+		<div class="relative mx-auto w-full max-w-6xl px-6 py-16">
+			<span class="block h-px w-10 bg-(--accent)"></span>
+
+			<h1 class="mt-6 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+				AutoClub Trackdays
+			</h1>
+
+			<p class="mt-4 text-sm text-gray-300">{ubicacion}</p>
+
+			<div class="mt-8 flex flex-wrap gap-4">
+				<a
+					href="/catalogo"
+					class="rounded-md bg-(--accent) px-6 py-3 text-sm font-semibold text-gray-900 transition hover:bg-(--accent-strong)"
+				>
+					Ver catálogo
+				</a>
+				<a
+					href="/contacto"
+					class="rounded-md border border-white/70 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-gray-900"
+				>
+					Contactar
+				</a>
+			</div>
+		</div>
+	</section>
+
+	<section class="mx-auto max-w-6xl px-6 py-20">
+		<div class="flex items-baseline justify-between gap-4">
+			<h2 class="text-2xl font-semibold tracking-tight text-gray-900">Destacados</h2>
+			<a href="/catalogo" class="text-sm font-medium text-gray-600 hover:text-gray-900">
+				Ver catálogo
+			</a>
+		</div>
+
+		<div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+			{destacados.map((coche) => <CocheCard {...coche} />)}
+		</div>
 	</section>
 </Layout>

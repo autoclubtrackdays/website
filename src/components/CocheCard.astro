@@ -1,0 +1,56 @@
+---
+interface Props {
+	modelo: string;
+	precio: number;
+	anio: number;
+	km: number;
+	combustible: string;
+	cambio: string;
+	imagen?: string;
+	/** Cuando exista la ficha del coche, pasar /catalogo/<id>. */
+	href?: string;
+}
+
+const {
+	modelo,
+	precio,
+	anio,
+	km,
+	combustible,
+	cambio,
+	imagen = '/coche-placeholder.jpg',
+	href = '/catalogo',
+} = Astro.props;
+
+const formatoPrecio = new Intl.NumberFormat('es-ES', {
+	style: 'currency',
+	currency: 'EUR',
+	maximumFractionDigits: 0,
+});
+
+const formatoKm = new Intl.NumberFormat('es-ES');
+---
+
+<a
+	href={href}
+	class="group block overflow-hidden rounded-lg border border-gray-200 bg-white transition hover:border-gray-400"
+>
+	<img
+		src={imagen}
+		alt={modelo}
+		width="800"
+		height="600"
+		loading="lazy"
+		class="aspect-4/3 w-full object-cover"
+	/>
+
+	<div class="p-4">
+		<h3 class="text-base font-semibold text-gray-900">{modelo}</h3>
+
+		<p class="mt-1 text-sm text-gray-500">
+			{anio} · {formatoKm.format(km)} km · {combustible} · {cambio}
+		</p>
+
+		<p class="mt-4 text-lg font-semibold text-gray-900">{formatoPrecio.format(precio)}</p>
+	</div>
+</a>

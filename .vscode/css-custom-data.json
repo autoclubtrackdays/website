@@ -1,0 +1,14 @@
+{
+  "version": 1.1,
+  "atDirectives": [
+    { "name": "@theme", "description": "Tailwind v4: define las variables de tema (colores, fuentes, espaciados) que generan utilidades." },
+    { "name": "@source", "description": "Tailwind v4: añade rutas extra donde buscar clases." },
+    { "name": "@utility", "description": "Tailwind v4: define una utilidad propia." },
+    { "name": "@variant", "description": "Tailwind v4: aplica una variante dentro de una regla." },
+    { "name": "@custom-variant", "description": "Tailwind v4: define una variante propia." },
+    { "name": "@apply", "description": "Tailwind: aplica clases de utilidad dentro de una regla CSS." },
+    { "name": "@reference", "description": "Tailwind v4: importa el tema sin duplicar CSS, para bloques <style> de componentes." },
+    { "name": "@config", "description": "Tailwind: ruta a un archivo de configuración heredado." },
+    { "name": "@plugin", "description": "Tailwind v4: carga un plugin." }
+  ]
+}
