@@ -3,4 +3,106 @@
 :root {
 	--accent: #ffea00;
 	--accent-strong: #e6d200;
+	/* Condensada y de caja alta: la letra de los dorsales y los circuitos.
+	   Solo para el nombre de la marca, nunca para texto corrido. */
+	--font-marca: 'Bebas Neue', 'Arial Narrow', system-ui, sans-serif;
+}
+
+.marca {
+	font-family: var(--font-marca);
+	letter-spacing: 0.02em;
+	line-height: 1;
+}
+
+/* El salto a #contacto se hace deslizando. El scroll-padding descuenta la
+   altura del header fijo, para que no tape el título al llegar. */
+html {
+	scroll-behavior: smooth;
+	scroll-padding-top: 5rem;
+}
+
+/* --- Movimiento ------------------------------------------------------------
+   Todo lo de aquí es decorativo: si el sistema pide menos movimiento, se
+   desactiva al final del archivo y la página sigue siendo idéntica en reposo. */
+
+/* Entrada de los bloques del hero, escalonada con animation-delay. */
+@keyframes subir {
+	from {
+		opacity: 0;
+		transform: translateY(28px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+.entra {
+	animation: subir 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Acercamiento lento de la foto del hero. Alterna para que no acabe congelada. */
+@keyframes acercar {
+	from {
+		transform: scale(1.02);
+	}
+	to {
+		transform: scale(1.14);
+	}
+}
+
+.acercar {
+	animation: acercar 28s ease-in-out infinite alternate;
+}
+
+/* Cinta de marcas. La lista va duplicada, así que al llegar al -50% el ciclo
+   reengancha justo donde empezó y el bucle no da tirón. */
+@keyframes desfilar {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-50%);
+	}
+}
+
+.desfila {
+	animation: desfilar 45s linear infinite;
+}
+
+.desfila:hover {
+	animation-play-state: paused;
+}
+
+/* Aparición al entrar en pantalla. El script añade .visible. */
+[data-revelar] {
+	opacity: 0;
+	transform: translateY(28px);
+	transition:
+		opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
+		transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+[data-revelar].visible {
+	opacity: 1;
+	transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+
+	.entra,
+	.acercar,
+	.desfila {
+		animation: none;
+	}
+
+	[data-revelar],
+	[data-revelar].visible {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
 }

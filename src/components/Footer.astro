@@ -1,41 +1,51 @@
 ---
-import { CONTACTO } from '../lib/contacto';
+import { CONTACTO, REDES } from '../lib/contacto';
 
 const year = new Date().getFullYear();
-
-const ubicacion = CONTACTO.direccion;
-const telefono = CONTACTO.telefono;
-
-const redes = [
-	{ label: 'Instagram', href: '#' },
-	{ label: 'Facebook', href: '#' },
-	{ label: 'WhatsApp', href: '#' },
-];
 ---
 
-<footer class="border-t border-gray-200 bg-white">
-	<div class="mx-auto max-w-6xl px-6 py-12">
-		<div class="flex justify-between gap-8 sm:grid-cols-3">
-			<div>
-				<p class="text-sm font-semibold text-gray-900">Ubicación</p>
-				<p class="mt-3 text-sm text-gray-600">{ubicacion}</p>
-			</div>
-
-			<div>
-				<p class="text-sm font-semibold text-gray-900">Teléfono</p>
-				<p class="mt-3 text-sm text-gray-600">
-					<a href={`tel:${telefono.tel}`} class="hover:text-gray-900">{telefono.texto}</a>
+<footer class="border-t border-white/10 bg-black text-white">
+	<div class="mx-auto max-w-6xl px-6 py-14">
+		<div class="flex flex-wrap gap-x-20 gap-y-10">
+			<div class="max-w-xs">
+				<div class="flex items-center gap-3">
+					<img src="/logo.svg" alt="" width="40" height="40" class="h-10 w-10" />
+					<span class="marca text-4xl">Autoclub Trackdays</span>
+				</div>
+				<p class="mt-4 text-sm text-gray-400">
+					Compraventa de vehículos en Madrid desde hace más de 25 años.
 				</p>
 			</div>
 
 			<div>
-				<p class="text-sm font-semibold text-gray-900">Redes sociales</p>
-				<ul class="mt-3 space-y-2">
+				<p class="text-sm font-semibold tracking-wide text-gray-500 uppercase">Ubicación</p>
+				<p class="mt-3 text-sm text-gray-300">{CONTACTO.direccion}</p>
+				<p class="mt-1 text-sm text-gray-500">{CONTACTO.horario}</p>
+			</div>
+
+			<div>
+				<p class="text-sm font-semibold tracking-wide text-gray-500 uppercase">Teléfono</p>
+				<p class="mt-3 text-sm text-gray-300">
+					<a href={`tel:${CONTACTO.telefono.tel}`} class="hover:text-(--accent)">
+						{CONTACTO.telefono.texto}
+					</a>
+				</p>
+			</div>
+
+			<div>
+				<p class="text-sm font-semibold tracking-wide text-gray-500 uppercase">Redes sociales</p>
+				<ul class="mt-3 flex items-center justify-around gap-4">
 					{
-						redes.map((red) => (
+						REDES.map((red) => (
 							<li>
-								<a href={red.href} class="text-sm text-gray-600 hover:text-gray-900">
-									{red.label}
+								<a
+									href={red.href}
+									target="_blank"
+									rel="noopener"
+									aria-label={red.nombre}
+									class="block transition hover:scale-110"
+								>
+									<img src={red.icono} alt="" width="28" height="28" class="h-7 w-7" />
 								</a>
 							</li>
 						))
@@ -44,18 +54,13 @@ const redes = [
 			</div>
 		</div>
 
-		<div class="flex justify-between mt-10 border-t border-gray-200 pt-6">
-		    <div>
-			    <p class="text-sm text-gray-500">
-				    &copy; {year} AutoClub Trackdays. Todos los derechos reservados.
-			    </p>
-		    </div>
-		    <div>
-			    <a href="#" class="text-sm text-gray-500 hover:text-gray-900">
-			        Privacidad · Términos
-			    </a>
-		    </div>
+		<div class="mt-12 flex flex-wrap justify-between gap-4 border-t border-white/10 pt-6">
+			<p class="text-sm text-gray-500">
+				&copy; {year} Autoclub Trackdays. Todos los derechos reservados.
+			</p>
+			<a href="#" class="text-sm text-gray-500 transition hover:text-gray-300">
+				Privacidad · Términos
+			</a>
 		</div>
-
 	</div>
 </footer>
