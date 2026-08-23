@@ -1,0 +1,75 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import {
+	consumoTexto,
+	fechaCorta,
+	fotoUrl,
+	kmTexto,
+	potenciaTexto,
+	precioTexto,
+} from '../lib/coches';
+
+interface Props {
+	coche: CollectionEntry<'coches'>;
+}
+
+const { coche } = Astro.props;
+const { data } = coche;
+
+// Una fila por pareja: el primer dato va a la izquierda y el segundo a la derecha.
+const especificaciones = [
+	[kmTexto(data.km), fechaCorta(data.matriculacion)],
+	[potenciaTexto(data.potenciaKw), data.cambio],
+	[data.consumo ? consumoTexto(data.consumo) : '—', data.combustible],
+];
+---
+
+<a
+	href={`/catalogo/${coche.id}`}
+	class="flex flex-col overflow-hidden border border-gray-200 bg-white transition hover:border-gray-400"
+>
+	<img
+		src={fotoUrl(data.carpeta, data.fotos[0], 640)}
+		alt={`${data.nombre} ${data.version}`}
+		width="640"
+		height="480"
+		loading="lazy"
+		class="aspect-4/3 w-full object-cover"
+	/>
+
+	<div class="flex flex-1 flex-col p-5">
+		<h3 class="text-xl font-semibold text-gray-900">{data.nombre}</h3>
+		<p class="mt-0.5 text-lg text-gray-600">{data.version}</p>
+
+		<div class="mt-5 flex flex-wrap justify-between items-end gap-x-18 gap-y-2">
+			<div>
+				<p class="text-base tracking-wide text-gray-500 uppercase">Al contado</p>
+				<p class="text-3xl font-bold text-gray-900">{precioTexto(data.precioContado)}</p>
+			</div>
+
+			{
+				data.precioFinanciado && (
+					<div>
+						<p class="text-base tracking-wide text-gray-500 uppercase">Financiado</p>
+						<p class="text-2xl font-bold text-gray-900">
+							{precioTexto(data.precioFinanciado)}
+						</p>
+					</div>
+				)
+			}
+		</div>
+
+		<ul
+			class="mt-auto flex flex-col gap-y-2 border-t border-gray-200 pt-5 text-lg text-gray-600"
+		>
+			{
+				especificaciones.map(([izquierda, derecha]) => (
+					<li class="flex justify-between gap-4">
+						<span>{izquierda}</span>
+						<span>{derecha}</span>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</a>

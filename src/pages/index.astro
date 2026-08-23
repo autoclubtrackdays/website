@@ -1,16 +1,11 @@
 ---
+import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
-import CocheCard from '../components/CocheCard.astro';
+import DestacadoCard from '../components/DestacadoCard.astro';
 
-const ubicacion = 'Calle de Ejemplo 00, 28000 Madrid';
+const ubicacion = 'Isla de Sumatra Nº 36, 28034 Madrid';
 
-// Datos de ejemplo hasta que exista el catálogo real.
-const destacados = [
-	{ modelo: 'Audi A4 Avant 2.0 TDI', precio: 21900, anio: 2019, km: 78000, combustible: 'Diésel', cambio: 'Automático' },
-	{ modelo: 'BMW Serie 3 320i', precio: 24500, anio: 2020, km: 54000, combustible: 'Gasolina', cambio: 'Automático' },
-	{ modelo: 'Volkswagen Golf 1.5 TSI', precio: 18400, anio: 2021, km: 42000, combustible: 'Gasolina', cambio: 'Manual' },
-	{ modelo: 'Mercedes Clase A 180d', precio: 22750, anio: 2019, km: 65000, combustible: 'Diésel', cambio: 'Automático' },
-];
+const destacados = await getCollection('coches', ({ data }) => data.destacado);
 ---
 
 <Layout title="AutoClub Trackdays">
@@ -28,7 +23,9 @@ const destacados = [
 				AutoClub Trackdays
 			</h1>
 
-			<p class="mt-4 text-sm text-gray-300">{ubicacion}</p>
+			<p class="mt-4 text-lg text-gray-100">Dedicándonos a la compraventa desde hace más de 25 años.</p>
+			<p class="text-lg text-gray-100">Desempeñamos nuestro trabajo con ilusión, trabajo y muchas ganas.</p>
+			<p class="mt-4 text-lg text-gray-300">{ubicacion}</p>
 
 			<div class="mt-8 flex flex-wrap gap-4">
 				<a
@@ -38,7 +35,7 @@ const destacados = [
 					Ver catálogo
 				</a>
 				<a
-					href="/contacto"
+					href="#contacto"
 					class="rounded-md border border-white/70 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-gray-900"
 				>
 					Contactar
@@ -49,14 +46,108 @@ const destacados = [
 
 	<section class="mx-auto max-w-6xl px-6 py-20">
 		<div class="flex items-baseline justify-between gap-4">
-			<h2 class="text-2xl font-semibold tracking-tight text-gray-900">Destacados</h2>
-			<a href="/catalogo" class="text-sm font-medium text-gray-600 hover:text-gray-900">
-				Ver catálogo
+			<h2 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase">Coches destacados</h2>
+			<a
+				href="/catalogo"
+				class="inline-flex items-center gap-2 border-b-2 border-(--accent) pb-1 text-base font-semibold tracking-wide text-black uppercase transition hover:translate-x-3"
+			>
+				Catálogo
+				<svg
+					viewBox="0 0 20 20"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="h-4 w-4"
+					aria-hidden="true"
+				>
+					<path d="M4 10h12m0 0-4-4m4 4-4 4" />
+				</svg>
 			</a>
 		</div>
 
-		<div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-			{destacados.map((coche) => <CocheCard {...coche} />)}
+		<div class="relative mt-10">
+			<ul
+				id="carrusel-destacados"
+				class="flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"
+			>
+				{
+					destacados.map((coche) => (
+						<li class="w-72 shrink-0 snap-start sm:w-80">
+							<DestacadoCard coche={coche} />
+						</li>
+					))
+				}
+			</ul>
+
+			<button
+				type="button"
+				data-carrusel="anterior"
+				aria-label="Coches anteriores"
+				class="absolute top-28 -left-4 hidden h-10 w-10 place-items-center rounded-full border border-gray-400 bg-white text-gray-900 shadow-sm transition hover:border-gray-400 disabled:pointer-events-none disabled:opacity-0 sm:grid"
+			>
+				<svg
+					viewBox="0 0 20 20"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="h-4 w-4"
+					aria-hidden="true"
+				>
+					<path d="M12 4 6 10l6 6" />
+				</svg>
+			</button>
+
+			<button
+				type="button"
+				data-carrusel="siguiente"
+				aria-label="Coches siguientes"
+				class="absolute top-28 -right-4 hidden h-10 w-10 place-items-center rounded-full border border-gray-400 bg-white text-gray-900 shadow-sm transition hover:border-gray-400 disabled:pointer-events-none disabled:opacity-0 sm:grid"
+			>
+				<svg
+					viewBox="0 0 20 20"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="h-4 w-4"
+					aria-hidden="true"
+				>
+					<path d="m8 4 6 6-6 6" />
+				</svg>
+			</button>
 		</div>
 	</section>
 </Layout>
+
+<script>
+	const pista = document.getElementById('carrusel-destacados');
+	const anterior = document.querySelector('[data-carrusel="anterior"]');
+	const siguiente = document.querySelector('[data-carrusel="siguiente"]');
+
+	if (pista instanceof HTMLElement && anterior instanceof HTMLButtonElement && siguiente instanceof HTMLButtonElement) {
+		// Una card mas el gap-6 (24px): el salto siempre deja otra card alineada.
+		const paso = () => {
+			const card = pista.firstElementChild;
+			return card ? card.getBoundingClientRect().width + 24 : pista.clientWidth;
+		};
+
+		anterior.addEventListener('click', () => pista.scrollBy({ left: -paso(), behavior: 'smooth' }));
+		siguiente.addEventListener('click', () => pista.scrollBy({ left: paso(), behavior: 'smooth' }));
+
+		// Se ocultan al llegar a cada extremo. El margen de 1px evita que el
+		// redondeo a subpixeles deje el boton activo sin recorrido posible.
+		const actualizar = () => {
+			anterior.disabled = pista.scrollLeft <= 1;
+			siguiente.disabled = pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 1;
+		};
+
+		pista.addEventListener('scroll', actualizar, { passive: true });
+		window.addEventListener('resize', actualizar);
+		actualizar();
+	}
+</script>

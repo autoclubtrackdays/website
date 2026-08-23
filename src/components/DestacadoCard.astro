@@ -1,0 +1,36 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { fechaCorta, fotoUrl, kmTexto, precioTexto } from '../lib/coches';
+
+interface Props {
+	coche: CollectionEntry<'coches'>;
+}
+
+const { coche } = Astro.props;
+const { data } = coche;
+---
+
+<a
+	href={`/catalogo/${coche.id}`}
+	class="group block overflow-hidden rounded-sm border border-gray-200 bg-white transition hover:border-gray-400"
+>
+	<img
+		src={fotoUrl(data.carpeta, data.fotos[0], 640)}
+		alt={`${data.nombre} ${data.version}`}
+		width="640"
+		height="480"
+		loading="lazy"
+		class="aspect-4/3 w-full object-cover"
+	/>
+
+	<div class="p-4">
+		<h3 class="text-xl font-semibold text-gray-900">{data.nombre}</h3>
+		<p class="mt-0.5 text-lg text-gray-600">{data.version}</p>
+
+		<p class="mt-1.5 text-sm text-gray-500">
+			{fechaCorta(data.matriculacion)} · {kmTexto(data.km)} · {data.combustible} · {data.cambio}
+		</p>
+
+		<p class="mt-4 text-2xl font-semibold text-gray-900">{precioTexto(data.precioContado)}</p>
+	</div>
+</a>

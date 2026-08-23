@@ -8,7 +8,7 @@ interface Props {
 	description?: string;
 }
 
-const { title = 'AutoClub Trackdays', description = 'Compra-venta de vehículos – Madrid.' } = Astro.props;
+const { title = 'Autoclub Trackdays', description = 'Compra-venta de vehículos – Madrid.' } = Astro.props;
 ---
 
 <!doctype html>
@@ -21,7 +21,7 @@ const { title = 'AutoClub Trackdays', description = 'Compra-venta de vehículos 
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<title>{title}</title>
 	</head>
-	<body class="flex min-h-screen flex-col bg-white text-gray-900">
+	<body class="flex min-h-screen flex-col bg-white text-black">
 		<Header />
 		<main class="flex-1">
 			<slot />

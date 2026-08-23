@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-/* Color de marca. Se usa solo como acento: CTA principal y detalles.
-   En las clases: bg-(--accent), text-(--accent), border-(--accent).
-   El texto encima siempre en gris oscuro. */
 :root {
 	--accent: #ffea00;
 	--accent-strong: #e6d200;
