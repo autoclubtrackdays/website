@@ -10,7 +10,6 @@ consumo: 4.5
 combustible: Híbrido
 carpeta: toyota-c-hr-2021
 fotos: ['01', '02', '03']
-destacado: true
 ---
 
 Híbrido autorecargable, etiqueta ECO y garantía híbrida en vigor.

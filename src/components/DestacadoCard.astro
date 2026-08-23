@@ -10,10 +10,7 @@ const { coche } = Astro.props;
 const { data } = coche;
 ---
 
-<a
-	href={`/catalogo/${coche.id}`}
-	class="group block overflow-hidden rounded-sm border border-gray-200 bg-white transition hover:border-gray-400"
->
+<div class="block overflow-hidden rounded-sm border border-gray-200 bg-white">
 	<img
 		src={fotoUrl(data.carpeta, data.fotos[0], 640)}
 		alt={`${data.nombre} ${data.version}`}
@@ -33,4 +30,4 @@ const { data } = coche;
 
 		<p class="mt-4 text-2xl font-semibold text-gray-900">{precioTexto(data.precioContado)}</p>
 	</div>
-</a>
+</div>

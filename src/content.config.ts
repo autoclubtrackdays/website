@@ -20,7 +20,6 @@ const coches = defineCollection({
 		/** Prefijo de la carpeta en R2. */
 		carpeta: z.string(),
 		fotos: z.array(z.string()).min(1),
-		destacado: z.boolean().default(false),
 	}),
 });
 

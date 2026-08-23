@@ -10,7 +10,6 @@ consumo: 5.6
 combustible: Gasolina
 carpeta: seat-leon-2020
 fotos: ['01', '02']
-destacado: true
 ---
 
 Acabado FR con llantas de 18 pulgadas y faros full LED.

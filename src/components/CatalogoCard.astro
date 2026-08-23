@@ -24,10 +24,7 @@ const especificaciones = [
 ];
 ---
 
-<a
-	href={`/catalogo/${coche.id}`}
-	class="flex flex-col overflow-hidden border border-gray-200 bg-white transition hover:border-gray-400"
->
+<div class="flex flex-col overflow-hidden border border-gray-200 bg-white">
 	<img
 		src={fotoUrl(data.carpeta, data.fotos[0], 640)}
 		alt={`${data.nombre} ${data.version}`}
@@ -72,4 +69,4 @@ const especificaciones = [
 			}
 		</ul>
 	</div>
-</a>
+</div>

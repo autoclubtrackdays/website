@@ -10,7 +10,6 @@ consumo: 5.3
 combustible: Gasolina
 carpeta: volkswagen-golf-2021
 fotos: ['01']
-destacado: true
 ---
 
 Octava generación, con garantía de fábrica en vigor.

@@ -10,7 +10,6 @@ consumo: 4.8
 combustible: Diésel
 carpeta: audi-a4-avant-2019
 fotos: ['01', '02', '03']
-destacado: true
 ---
 
 Familiar con maletero de 505 litros y enganche de remolque.

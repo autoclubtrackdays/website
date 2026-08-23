@@ -1,8 +1,10 @@
 ---
+import { CONTACTO } from '../lib/contacto';
+
 const year = new Date().getFullYear();
 
-const ubicacion = 'Calle de Ejemplo 00, 28000 Madrid';
-const telefono = '625390963';
+const ubicacion = CONTACTO.direccion;
+const telefono = CONTACTO.telefono;
 
 const redes = [
 	{ label: 'Instagram', href: '#' },
@@ -22,7 +24,7 @@ const redes = [
 			<div>
 				<p class="text-sm font-semibold text-gray-900">Teléfono</p>
 				<p class="mt-3 text-sm text-gray-600">
-					<a href={`tel:+34${telefono}`} class="hover:text-gray-900">{telefono}</a>
+					<a href={`tel:${telefono.tel}`} class="hover:text-gray-900">{telefono.texto}</a>
 				</p>
 			</div>
 

@@ -10,7 +10,6 @@ consumo: 4.4
 combustible: Diésel
 carpeta: mercedes-clase-a-2019
 fotos: ['01', '02']
-destacado: true
 ---
 
 Acabado Style con navegador MBUX y cámara de marcha atrás.

@@ -10,7 +10,6 @@ consumo: 11.4
 combustible: Gasolina
 carpeta: ford-mustang-2015
 fotos: ['01', '02', '03']
-destacado: true
 ---
 
 Descapotable con capota de lona, tapicería de cuero y libro de mantenimiento al día.

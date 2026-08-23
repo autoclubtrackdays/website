@@ -11,7 +11,6 @@ consumo: 6.4
 combustible: Gasolina
 carpeta: bmw-serie-3-320i-2020
 fotos: ['01', '02']
-destacado: true
 ---
 
 Segunda mano nacional, un solo propietario.
