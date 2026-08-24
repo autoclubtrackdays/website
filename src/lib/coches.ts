@@ -1,33 +1,26 @@
 import type { CollectionEntry } from 'astro:content';
 
-export type Coche = CollectionEntry<'coches'>;
+type Datos = CollectionEntry<'coches'>['data'];
 
-/** Base del bucket R2, p. ej. https://cdn.autoclubtrackdays.com
- *  Sin definir, las cards caen al placeholder local. */
+/** Base del bucket R2, p. ej. https://cdn.autoclubtrackdays.com */
 const CDN_BASE = import.meta.env.PUBLIC_CDN_BASE;
 
-/** Fotos de relleno mientras no exista el bucket. Se reparten de forma estable
- *  segun la carpeta, para que cada coche se vea siempre igual entre recargas.
- *  En cuanto PUBLIC_CDN_BASE este definida, este camino deja de usarse. */
-const PLACEHOLDERS = [
-	'/placeholders/1.jpg',
-	'/placeholders/2.jpg',
-	'/placeholders/3.jpg',
-	'/placeholders/4.jpg',
-	'/placeholders/5.jpg',
-];
+/** Mientras no haya R2, las fotos salen de la carpeta media/ de cada coche.
+ *  Solo se enlaza la primera: es la única que usan las cards. */
+const PORTADAS = import.meta.glob<string>('/src/content/coches/*/media/01.jpg', {
+	eager: true,
+	query: '?url',
+	import: 'default',
+});
 
-function placeholder(carpeta: string): string {
-	const hash = [...carpeta].reduce((acc, letra) => (acc * 31 + letra.charCodeAt(0)) | 0, 7);
-	return PLACEHOLDERS[Math.abs(hash) % PLACEHOLDERS.length];
-}
+/** Red de seguridad para un coche que llegue sin fotos. */
+const PLACEHOLDER = '/placeholders/1.jpg';
 
-/** Anchos que genera el script de ingesta: 640 para las cards, 1600 para la ficha. */
-export type TamanoFoto = 640 | 1600;
-
-export function fotoUrl(carpeta: string, foto: string, tamano: TamanoFoto = 640): string {
-	if (!CDN_BASE) return placeholder(carpeta);
-	return `${CDN_BASE.replace(/\/$/, '')}/coches/${carpeta}/${foto}-${tamano}.webp`;
+/** Foto de portada. Cuando exista PUBLIC_CDN_BASE tirará de R2 y la carpeta
+ *  media/ dejará de usarse sin tocar ningún componente. */
+export function portada(id: string): string {
+	if (CDN_BASE) return `${CDN_BASE.replace(/\/$/, '')}/coches/${id}/01-640.webp`;
+	return PORTADAS[`/src/content/coches/${id}/media/01.jpg`] ?? PLACEHOLDER;
 }
 
 const precioFmt = new Intl.NumberFormat('es-ES', {
@@ -36,24 +29,27 @@ const precioFmt = new Intl.NumberFormat('es-ES', {
 	maximumFractionDigits: 0,
 });
 const kmFmt = new Intl.NumberFormat('es-ES');
-const consumoFmt = new Intl.NumberFormat('es-ES', {
-	minimumFractionDigits: 1,
-	maximumFractionDigits: 1,
-});
 
 export const precioTexto = (euros: number) => precioFmt.format(euros);
 
 export const kmTexto = (km: number) => `${kmFmt.format(km)} km`;
 
-/** 1 kW = 1,35962 CV. Se calcula para no tener que escribirlo en cada entrada. */
-export const cv = (kw: number) => Math.round(kw * 1.35962);
+/** 'BMW M4', 'Ford Mustang'. Sin `model` (algún clásico) tira del título. */
+export const nombreCorto = (data: Datos) => (data.model ? `${data.make} ${data.model}` : data.title);
 
-export const potenciaTexto = (kw: number) => `${kw} kW (${cv(kw)} CV)`;
+/** '317 kW (431 CV)', o null en los coches que no declaran potencia. */
+export function potenciaTexto(data: Datos): string | null {
+	if (!data.power_kw && !data.power_hp) return null;
+	if (data.power_kw && data.power_hp) return `${data.power_kw} kW (${data.power_hp} CV)`;
+	return data.power_kw ? `${data.power_kw} kW` : `${data.power_hp} CV`;
+}
 
-export const consumoTexto = (litros: number) => `${consumoFmt.format(litros)} l/100 km`;
+/** El origen manda 'manual' y 'Automático' sin criterio fijo. */
+export const cambioTexto = (transmission: string) =>
+	transmission.charAt(0).toUpperCase() + transmission.slice(1).toLowerCase();
 
-/** '2015-03' -> '03/2015' */
-export function fechaCorta(matriculacion: string): string {
-	const [anio, mes] = matriculacion.split('-');
-	return `${mes}/${anio}`;
+/** El consumo no está en el frontmatter sino en la tabla del cuerpo. */
+export function consumoTexto(body?: string): string | null {
+	const encontrado = body?.match(/Consumo combinado\s*\|\s*([\d.,]+)\s*l\/100\s*km/i);
+	return encontrado ? `${encontrado[1]} l/100 km` : null;
 }

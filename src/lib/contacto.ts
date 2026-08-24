@@ -1,8 +1,8 @@
 /** Datos de contacto del negocio. Un solo sitio: los usan la portada y el footer. */
 export const CONTACTO = {
 	/** Fijo de la tienda. `tel` es lo que marca el móvil al pulsar. */
-	telefono: { texto: '649 963 131', tel: '+34649963131' },
-	whatsapp: { texto: '649 963 131', numero: '34649963131' },
+	telefono: { texto: '649 96 31 31', tel: '+34649963131' },
+	whatsapp: { texto: '649 96 31 31', numero: '34649963131' },
 	direccion: 'Isla de Sumatra Nº 36, 28034 Madrid',
 	horario: 'Todos los días de 8:00 a 21:00',
 };

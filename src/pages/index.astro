@@ -9,12 +9,12 @@ const coches = await getCollection('coches');
 
 const destacados = DESTACADOS.map((id) => {
 	const coche = coches.find((candidato) => candidato.id === id);
-	if (!coche) throw new Error(`Destacado sin coche: no existe src/content/coches/${id}.md`);
+	if (!coche) throw new Error(`Destacado sin coche: no existe la carpeta src/content/coches/${id}`);
 	return coche;
 });
 
-// Las marcas salen del propio stock: la primera palabra del nombre de cada coche.
-const marcas = [...new Set(coches.map((coche) => coche.data.nombre.split(' ')[0]))].sort();
+// Las marcas salen del propio stock, sin lista escrita a mano.
+const marcas = [...new Set(coches.map((coche) => coche.data.make))].sort();
 ---
 
 <Layout title="AutoClub Trackdays">
@@ -90,12 +90,12 @@ const marcas = [...new Set(coches.map((coche) => coche.data.nombre.split(' ')[0]
 		</div>
 	</section>
 
-	<!-- Cinta de marcas: lista duplicada para que el bucle no dé tirón. -->
-	<section class="overflow-hidden border-b border-gray-200 py-8">
+	<!-- Cinta de marcas: lista duplicada para que el bucle no de tiron. -->
+	<section class="overflow-hidden border-b border-gray-200 py-6">
 		<div class="desfila flex w-max items-center gap-12 pr-12">
 			{
 				[...marcas, ...marcas].map((marca) => (
-					<span class="flex items-center gap-12 text-2xl font-semibold tracking-tight whitespace-nowrap text-gray-300">
+					<span class="flex items-center gap-12 text-2xl font-semibold tracking-tight whitespace-nowrap text-gray-400">
 						{marca}
 						<span class="h-1.5 w-1.5 rounded-full bg-(--accent)" />
 					</span>
@@ -145,9 +145,11 @@ const marcas = [...new Set(coches.map((coche) => coche.data.nombre.split(' ')[0]
 				}
 			</ul>
 
-			<!-- Aviso de que hay más a la derecha, ahora que no hay barra de scroll. -->
+			<!-- Aviso de que hay más a la derecha, ahora que no hay barra de scroll.
+			     El script lo apaga al llegar al final. -->
 			<div
-				class="pointer-events-none absolute inset-y-0 right-0 w-20 bg-linear-to-l from-white to-transparent"
+				data-carrusel="fundido"
+				class="pointer-events-none absolute inset-y-0 right-0 w-20 bg-linear-to-l from-white to-transparent transition-opacity duration-300"
 			>
 			</div>
 
@@ -276,6 +278,7 @@ const marcas = [...new Set(coches.map((coche) => coche.data.nombre.split(' ')[0]
 	const pista = document.getElementById('carrusel-destacados');
 	const anterior = document.querySelector('[data-carrusel="anterior"]');
 	const siguiente = document.querySelector('[data-carrusel="siguiente"]');
+	const fundido = document.querySelector('[data-carrusel="fundido"]');
 
 	if (
 		pista instanceof HTMLElement &&
@@ -294,8 +297,13 @@ const marcas = [...new Set(coches.map((coche) => coche.data.nombre.split(' ')[0]
 		// Se ocultan al llegar a cada extremo. El margen de 1px evita que el
 		// redondeo a subpixeles deje el boton activo sin recorrido posible.
 		const actualizar = () => {
+			const alFinal = pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 1;
+
 			anterior.disabled = pista.scrollLeft <= 1;
-			siguiente.disabled = pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 1;
+			siguiente.disabled = alFinal;
+
+			// El degradado solo tiene sentido mientras quede algo por ver.
+			fundido?.classList.toggle('opacity-0', alFinal);
 		};
 
 		pista.addEventListener('scroll', actualizar, { passive: true });

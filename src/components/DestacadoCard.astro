@@ -1,6 +1,6 @@
 ---
 import type { CollectionEntry } from 'astro:content';
-import { fechaCorta, fotoUrl, kmTexto, precioTexto } from '../lib/coches';
+import { cambioTexto, kmTexto, nombreCorto, portada, precioTexto } from '../lib/coches';
 
 interface Props {
 	coche: CollectionEntry<'coches'>;
@@ -12,8 +12,8 @@ const { data } = coche;
 
 <div class="block overflow-hidden rounded-sm border border-gray-200 bg-white">
 	<img
-		src={fotoUrl(data.carpeta, data.fotos[0], 640)}
-		alt={`${data.nombre} ${data.version}`}
+		src={portada(coche.id)}
+		alt={data.title}
 		width="640"
 		height="480"
 		loading="lazy"
@@ -21,13 +21,15 @@ const { data } = coche;
 	/>
 
 	<div class="p-4">
-		<h3 class="text-xl font-semibold text-gray-900">{data.nombre}</h3>
-		<p class="mt-0.5 text-lg text-gray-600">{data.version}</p>
+		<h3 class="text-base font-semibold text-gray-900">{nombreCorto(data)}</h3>
+		<p class="mt-0.5 text-sm text-gray-600">{data.variant}</p>
 
-		<p class="mt-1.5 text-sm text-gray-500">
-			{fechaCorta(data.matriculacion)} · {kmTexto(data.km)} · {data.combustible} · {data.cambio}
+		<p class="mt-1 text-sm text-gray-500">
+			{data.first_registration} · {kmTexto(data.mileage_km)} · {data.fuel} · {
+				cambioTexto(data.transmission)
+			}
 		</p>
 
-		<p class="mt-4 text-2xl font-semibold text-gray-900">{precioTexto(data.precioContado)}</p>
+		<p class="mt-4 text-lg font-semibold text-gray-900">{precioTexto(data.price_eur)}</p>
 	</div>
 </div>

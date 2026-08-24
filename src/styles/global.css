@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Se sirve desde /public, no desde Google: sin peticiones a terceros.
+   `block` en lugar de `swap` evita el parpadeo de medio segundo en el que el
+   logotipo se veía con la tipografía de respaldo antes de cambiar. Como el
+   archivo va precargado desde el <head>, la espera es inapreciable. */
+@font-face {
+	font-family: 'Bebas Neue';
+	src: url('/fonts/bebas-neue.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: block;
+}
+
 :root {
 	--accent: #ffea00;
 	--accent-strong: #e6d200;
