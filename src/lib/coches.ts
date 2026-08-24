@@ -53,3 +53,24 @@ export function consumoTexto(body?: string): string | null {
 	const encontrado = body?.match(/Consumo combinado\s*\|\s*([\d.,]+)\s*l\/100\s*km/i);
 	return encontrado ? `${encontrado[1]} l/100 km` : null;
 }
+
+/** '11/2017' -> 201711. Un número así ordena por fecha sin parsear nada. */
+export function ordenFecha(first_registration: string): number {
+	const [mes, anio] = first_registration.split('/');
+	return Number(anio) * 100 + Number(mes);
+}
+
+/** Minúsculas y sin tildes, para que 'citroen' encuentre 'Citroën'. */
+export const normalizar = (texto: string) =>
+	texto
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[̀-ͯ]/g, '');
+
+/** Todo lo que debería encontrar el buscador de un coche, en una sola cadena. */
+export const textoBusqueda = (data: Datos) =>
+	normalizar(
+		[data.title, data.make, data.model, data.variant, data.color, data.body_type, data.fuel]
+			.filter(Boolean)
+			.join(' '),
+	);

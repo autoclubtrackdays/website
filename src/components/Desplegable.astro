@@ -1,0 +1,165 @@
+---
+// Desplegable propio en lugar de <select>: el navegador no deja separar la
+// flecha nativa de su borde ni dar estilo a la lista de opciones.
+interface Opcion {
+	valor: string;
+	texto: string;
+}
+
+interface Props {
+	campo: string;
+	opciones: Opcion[];
+	/** Si se pasa, el botón muestra siempre este texto en vez de la opción
+	 *  elegida, y no se resalta como filtro puesto. Para el de ordenar. */
+	etiquetaFija?: string;
+}
+
+const { campo, opciones, etiquetaFija } = Astro.props;
+---
+
+<div
+	class="relative"
+	data-desplegable
+	data-campo={campo}
+	data-valor={opciones[0].valor}
+	data-etiqueta-fija={etiquetaFija}
+>
+	<button
+		type="button"
+		data-boton
+		aria-haspopup="listbox"
+		aria-expanded="false"
+		class="flex w-full items-center justify-between gap-6 rounded-sm border border-gray-300 py-3 pr-4 pl-4 text-sm font-medium whitespace-nowrap text-gray-900 transition hover:border-gray-900 focus-visible:border-black focus-visible:outline-none"
+	>
+		<span data-texto>{etiquetaFija ?? opciones[0].texto}</span>
+		<svg
+			data-flecha
+			viewBox="0 0 20 20"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			class="h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200"
+			aria-hidden="true"
+		>
+			<path d="m5 8 5 5 5-5"></path>
+		</svg>
+	</button>
+
+	<ul
+		data-lista
+		role="listbox"
+		hidden
+		class="absolute top-full left-0 z-30 mt-1 min-w-full rounded-sm border border-gray-200 bg-white py-1 shadow-xl"
+	>
+		{
+			opciones.map((opcion, indice) => (
+				<li>
+					<button
+						type="button"
+						role="option"
+						data-opcion={opcion.valor}
+						aria-selected={indice === 0}
+						class="flex w-full items-center border-l-2 border-transparent py-2 pr-10 pl-4 text-left text-sm whitespace-nowrap text-gray-600 transition hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:outline-none aria-selected:border-(--accent) aria-selected:font-semibold aria-selected:text-black"
+					>
+						{opcion.texto}
+					</button>
+				</li>
+			))
+		}
+	</ul>
+</div>
+
+<script>
+	// Un solo script para todas las instancias: Astro lo empaqueta una vez.
+	document.querySelectorAll<HTMLElement>('[data-desplegable]').forEach((raiz) => {
+		const boton = raiz.querySelector<HTMLButtonElement>('[data-boton]');
+		const lista = raiz.querySelector<HTMLElement>('[data-lista]');
+		const texto = raiz.querySelector<HTMLElement>('[data-texto]');
+		const flecha = raiz.querySelector<SVGElement>('[data-flecha]');
+
+		if (!boton || !lista || !texto) return;
+
+		const opciones = [...lista.querySelectorAll<HTMLButtonElement>('[data-opcion]')];
+
+		const abrir = (abierto: boolean) => {
+			lista.hidden = !abierto;
+			boton.setAttribute('aria-expanded', String(abierto));
+			flecha?.classList.toggle('rotate-180', abierto);
+
+			if (abierto) {
+				const elegida = opciones.find((o) => o.getAttribute('aria-selected') === 'true');
+				(elegida ?? opciones[0])?.focus();
+			}
+		};
+
+		// `avisar` en falso al restaurar desde la URL: cambia lo que se ve, pero no
+		// vuelve a disparar el filtrado ni a escribir en el historial.
+		const seleccionar = (valor: string, avisar = true) => {
+			const elegida = opciones.find((o) => o.dataset.opcion === valor) ?? opciones[0];
+			const puesto = Boolean(elegida.dataset.opcion);
+
+			const fija = raiz.dataset.etiquetaFija;
+
+			raiz.dataset.valor = elegida.dataset.opcion ?? '';
+			opciones.forEach((o) => o.setAttribute('aria-selected', String(o === elegida)));
+
+			if (!fija) {
+				texto.textContent = elegida.textContent?.trim() ?? '';
+
+				// Un filtro activo se marca en el propio botón, para verlo sin abrirlo.
+				boton.classList.toggle('border-black', puesto);
+				boton.classList.toggle('bg-gray-50', puesto);
+			}
+
+			if (avisar) raiz.dispatchEvent(new CustomEvent('cambio', { bubbles: true }));
+		};
+
+		boton.addEventListener('click', () => abrir(lista.hidden));
+
+		opciones.forEach((opcion) => {
+			opcion.addEventListener('click', () => {
+				seleccionar(opcion.dataset.opcion ?? '');
+				abrir(false);
+				boton.focus();
+			});
+		});
+
+		raiz.addEventListener('establecer', (evento) => {
+			seleccionar((evento as CustomEvent<string>).detail, false);
+		});
+
+		raiz.addEventListener('keydown', (evento) => {
+			if (evento.key === 'Escape') {
+				abrir(false);
+				boton.focus();
+				return;
+			}
+
+			if (lista.hidden) {
+				if (evento.key === 'ArrowDown' || evento.key === 'Enter' || evento.key === ' ') {
+					evento.preventDefault();
+					abrir(true);
+				}
+				return;
+			}
+
+			const actual = opciones.indexOf(document.activeElement as HTMLButtonElement);
+
+			if (evento.key === 'ArrowDown') {
+				evento.preventDefault();
+				opciones[Math.min(actual + 1, opciones.length - 1)]?.focus();
+			}
+
+			if (evento.key === 'ArrowUp') {
+				evento.preventDefault();
+				opciones[Math.max(actual - 1, 0)]?.focus();
+			}
+		});
+
+		document.addEventListener('click', (evento) => {
+			if (!raiz.contains(evento.target as Node)) abrir(false);
+		});
+	});
+</script>

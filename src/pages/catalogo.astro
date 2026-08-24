@@ -2,22 +2,241 @@
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import CatalogoCard from '../components/CatalogoCard.astro';
+import Desplegable from '../components/Desplegable.astro';
+import { cambioTexto, ordenFecha, textoBusqueda } from '../lib/coches';
 
-const coches = (await getCollection('coches')).sort(
-	(a, b) => a.data.price_eur - b.data.price_eur,
-);
+// Mismo orden que el que aplica el script por defecto, para que no baile al cargar.
+const coches = (await getCollection('coches')).sort((a, b) => b.data.price_eur - a.data.price_eur);
+
+// Los desplegables se llenan con lo que hay en stock: nunca ofrecen una opción
+// que no devuelva resultados.
+const opciones = (valores: string[]) => [...new Set(valores)].sort();
+
+const marcas = opciones(coches.map((coche) => coche.data.make));
+const combustibles = opciones(coches.map((coche) => coche.data.fuel));
+const cambios = opciones(coches.map((coche) => cambioTexto(coche.data.transmission)));
+
+// La primera es la de por defecto.
+const ordenaciones = [
+	{ valor: 'precio:desc', texto: 'Precio: de mayor a menor' },
+	{ valor: 'precio:asc', texto: 'Precio: de menor a mayor' },
+	{ valor: 'km:asc', texto: 'Kilometraje: menos primero' },
+];
+
+// La primera opción de cada filtro es la de "sin filtrar", con valor vacío.
+const conTodas = (etiqueta: string, valores: string[]) => [
+	{ valor: '', texto: etiqueta },
+	...valores.map((valor) => ({ valor, texto: valor })),
+];
+
+const filtros = [
+	{ campo: 'marca', opciones: conTodas('Todas las marcas', marcas) },
+	{ campo: 'combustible', opciones: conTodas('Cualquier combustible', combustibles) },
+	{ campo: 'cambio', opciones: conTodas('Cualquier cambio', cambios) },
+];
 ---
 
-<Layout title="Catálogo – AutoClub Trackdays">
+<Layout title="Catálogo – Autoclub Trackdays">
 	<section class="mx-auto max-w-6xl px-6 py-16">
-		<h1 class="text-3xl font-semibold tracking-tight text-gray-900">Catálogo</h1>
-		<p class="mt-2 text-sm text-gray-500">
-			{coches.length}
-			{coches.length === 1 ? ' unidad disponible' : ' unidades disponibles'}
-		</p>
+		<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
+			Catálogo
+		</h1>
+		<span class="mt-3 block h-1 w-100 max-w-full bg-(--accent)"></span>
 
-		<div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-			{coches.map((coche) => <CatalogoCard coche={coche} />)}
+		<div class="mt-10 flex flex-col gap-4 border-y border-gray-200 py-6 lg:flex-row lg:items-center">
+			<label class="relative flex-1">
+				<span class="sr-only">Buscar coche</span>
+				<svg
+					viewBox="0 0 20 20"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					class="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-gray-400"
+					aria-hidden="true"
+				>
+					<circle cx="9" cy="9" r="6"></circle>
+					<path d="m17 17-3.5-3.5"></path>
+				</svg>
+				<input
+					id="busqueda"
+					type="search"
+					autocomplete="off"
+					placeholder="Buscar"
+					class="w-full rounded-sm border border-gray-300 py-3 pr-4 pl-11 text-sm text-gray-900 transition placeholder:text-gray-400 focus:border-black focus:outline-none"
+				/>
+			</label>
+
+			<div class="flex flex-wrap gap-3">
+				{filtros.map((filtro) => <Desplegable campo={filtro.campo} opciones={filtro.opciones} />)}
+				<Desplegable campo="orden" opciones={ordenaciones} etiquetaFija="Ordenar por:" />
+			</div>
 		</div>
+
+		<div class="mt-6 flex items-center justify-between gap-4">
+			<p id="contador" class="text-sm text-gray-500">
+				{coches.length} unidades disponibles
+			</p>
+			<button
+				id="limpiar"
+				type="button"
+				hidden
+				class="border-b-2 border-(--accent) pb-0.5 text-sm font-semibold tracking-wide text-black uppercase transition hover:translate-x-1"
+			>
+				Limpiar filtros
+			</button>
+		</div>
+
+		<ul id="rejilla" class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+			{
+				coches.map((coche) => (
+					<li
+						data-coche
+						data-marca={coche.data.make}
+						data-combustible={coche.data.fuel}
+						data-cambio={cambioTexto(coche.data.transmission)}
+						data-precio={coche.data.price_eur}
+						data-km={coche.data.mileage_km}
+						data-fecha={ordenFecha(coche.data.first_registration)}
+						data-potencia={coche.data.power_kw ?? 0}
+						data-busqueda={textoBusqueda(coche.data)}
+					>
+						<CatalogoCard coche={coche} />
+					</li>
+				))
+			}
+		</ul>
+
+		<p id="vacio" hidden class="mt-16 text-center text-lg text-gray-500">
+			Ningún coche coincide con la búsqueda. Prueba a quitar algún filtro.
+		</p>
 	</section>
 </Layout>
+
+<script>
+	import { normalizar } from '../lib/coches';
+
+	const rejilla = document.getElementById('rejilla');
+	const busqueda = document.getElementById('busqueda');
+	const contador = document.getElementById('contador');
+	const vacio = document.getElementById('vacio');
+	const limpiar = document.getElementById('limpiar');
+
+	const desplegables = [...document.querySelectorAll<HTMLElement>('[data-desplegable]')];
+	const orden = desplegables.find((d) => d.dataset.campo === 'orden');
+	const filtros = desplegables.filter((d) => d.dataset.campo !== 'orden');
+
+	if (
+		rejilla instanceof HTMLElement &&
+		busqueda instanceof HTMLInputElement &&
+		orden &&
+		contador &&
+		vacio &&
+		limpiar
+	) {
+		const tarjetas = [...rejilla.querySelectorAll<HTMLElement>('[data-coche]')];
+
+		// Ordenar mueve los nodos que ya existen: no se vuelve a pintar ninguna card.
+		const ordenar = () => {
+			const [campo, direccion] = (orden.dataset.valor ?? '').split(':');
+			const factor = direccion === 'desc' ? -1 : 1;
+
+			[...tarjetas]
+				.sort((a, b) => (Number(a.dataset[campo]) - Number(b.dataset[campo])) * factor)
+				.forEach((tarjeta) => rejilla.appendChild(tarjeta));
+		};
+
+		const aplicar = () => {
+			const texto = normalizar(busqueda.value.trim());
+			const activos = filtros.filter((filtro) => filtro.dataset.valor);
+
+			let visibles = 0;
+
+			tarjetas.forEach((tarjeta) => {
+				const coincide =
+					(!texto || (tarjeta.dataset.busqueda ?? '').includes(texto)) &&
+					activos.every((filtro) => tarjeta.dataset[filtro.dataset.campo!] === filtro.dataset.valor);
+
+				tarjeta.classList.toggle('hidden', !coincide);
+				if (coincide) visibles++;
+			});
+
+			contador.textContent =
+				visibles === 1 ? '1 unidad disponible' : `${visibles} unidades disponibles`;
+			vacio.hidden = visibles > 0;
+			limpiar.hidden = !texto && activos.length === 0 && orden.dataset.valor === ordenPorDefecto;
+
+			ordenar();
+		};
+
+		const ordenPorDefecto =
+			orden.querySelector<HTMLElement>('[data-opcion]')?.dataset.opcion ?? 'precio:desc';
+
+		// --- Estado en la URL --------------------------------------------------
+		// Así un catálogo filtrado se puede compartir o guardar en favoritos, y el
+		// botón de atrás recorre los filtros en lugar de salir de la página.
+
+		const leerUrl = () => {
+			const parametros = new URLSearchParams(location.search);
+
+			busqueda.value = parametros.get('q') ?? '';
+
+			// Un valor inventado en la URL cae en la primera opción, así que nunca
+			// se acaba ordenando por un campo que no existe.
+			const establecer = (elemento: HTMLElement, valor: string) =>
+				elemento.dispatchEvent(new CustomEvent('establecer', { detail: valor }));
+
+			filtros.forEach((filtro) => establecer(filtro, parametros.get(filtro.dataset.campo!) ?? ''));
+			establecer(orden, parametros.get('orden') ?? ordenPorDefecto);
+		};
+
+		const escribirUrl = (metodo: 'pushState' | 'replaceState') => {
+			const parametros = new URLSearchParams();
+			const texto = busqueda.value.trim();
+
+			if (texto) parametros.set('q', texto);
+
+			filtros.forEach((filtro) => {
+				if (filtro.dataset.valor) parametros.set(filtro.dataset.campo!, filtro.dataset.valor);
+			});
+
+			if (orden.dataset.valor !== ordenPorDefecto) parametros.set('orden', orden.dataset.valor!);
+
+			const cadena = parametros.toString();
+			history[metodo]({}, '', cadena ? `?${cadena}` : location.pathname);
+		};
+
+		// Al escribir se reemplaza la entrada del historial: si no, cada tecla
+		// dejaría un paso atrás distinto.
+		busqueda.addEventListener('input', () => {
+			aplicar();
+			escribirUrl('replaceState');
+		});
+
+		const alCambiar = () => {
+			aplicar();
+			escribirUrl('pushState');
+		};
+
+		desplegables.forEach((desplegable) => desplegable.addEventListener('cambio', alCambiar));
+
+		limpiar.addEventListener('click', () => {
+			busqueda.value = '';
+			filtros.forEach((filtro) =>
+				filtro.dispatchEvent(new CustomEvent('establecer', { detail: '' })),
+			);
+			orden.dispatchEvent(new CustomEvent('establecer', { detail: ordenPorDefecto }));
+			alCambiar();
+		});
+
+		// Atrás y adelante: se repinta desde la URL, sin tocar el historial.
+		window.addEventListener('popstate', () => {
+			leerUrl();
+			aplicar();
+		});
+
+		// Arranque: lo que venga en la URL manda.
+		leerUrl();
+		aplicar();
+	}
+</script>
