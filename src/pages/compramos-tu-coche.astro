@@ -1,19 +1,18 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { CONTACTO, WHATSAPP_ENLACE } from '../lib/contacto';
-import { SERVICIOS } from '../lib/servicios';
-
-const servicio = SERVICIOS.find((candidato) => candidato.href === '/compramos-tu-coche')!;
 ---
 
-<Layout title={`${servicio.titulo} – Autoclub Trackdays`} description={servicio.descripcion}>
-	<section class="mx-auto max-w-6xl px-6 py-16">
+<Layout title="Compramos tu coche – Autoclub Trackdays" description="Compramos tu coche en Madrid: tasación sin compromiso y precio cerrado.">
+	<section class="mx-auto max-w-6xl px-6 pt-16 pb-20">
 		<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
-			{servicio.titulo}
+			Compramos tu coche
 		</h1>
-		<span class="mt-3 block h-1 w-100 max-w-full bg-(--accent)"></span>
+		<span class="mt-3 block h-1 w-16 bg-(--accent)"></span>
 
-		<p class="mt-10 max-w-2xl text-xl text-gray-600">{servicio.descripcion}</p>
+		<p class="mt-6 max-w-2xl text-lg text-gray-600">
+			Te lo tasamos y te damos un precio cerrado. Si te encaja, el coche es nuestro ese mismo día y del papeleo nos encargamos nosotros.
+		</p>
 
 		<div class="mt-10 flex flex-wrap gap-4">
 			<a

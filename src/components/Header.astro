@@ -1,6 +1,13 @@
 ---
 import { CONTACTO } from '../lib/contacto';
-import { SERVICIOS } from '../lib/servicios';
+
+// Cada servicio es su propia página con su contenido; aquí solo hacen falta los
+// enlaces del menú.
+const servicios = [
+	{ titulo: 'Vendemos tu coche', href: '/vendemos-tu-coche' },
+	{ titulo: 'Compramos tu coche', href: '/compramos-tu-coche' },
+	{ titulo: 'Pedidos custom', href: '/pedidos-custom' },
+];
 ---
 
 <header class="sticky top-0 z-50 border-b border-white/10 bg-black/90 backdrop-blur">
@@ -57,7 +64,7 @@ import { SERVICIOS } from '../lib/servicios';
 					<div data-menu-lista hidden class="absolute top-full left-0 z-40 pt-3">
 						<ul class="min-w-64 border border-white/10 bg-black/95 py-1 backdrop-blur">
 							{
-								SERVICIOS.map((servicio) => (
+								servicios.map((servicio) => (
 									<li>
 										<a
 											href={servicio.href}

@@ -1,19 +1,18 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { CONTACTO, WHATSAPP_ENLACE } from '../lib/contacto';
-import { SERVICIOS } from '../lib/servicios';
-
-const servicio = SERVICIOS.find((candidato) => candidato.href === '/pedidos-custom')!;
 ---
 
-<Layout title={`${servicio.titulo} – Autoclub Trackdays`} description={servicio.descripcion}>
-	<section class="mx-auto max-w-6xl px-6 py-16">
+<Layout title="Pedidos custom – Autoclub Trackdays" description="Pedidos custom: localizamos el coche que buscas con las especificaciones que pidas.">
+	<section class="mx-auto max-w-6xl px-6 pt-16 pb-20">
 		<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
-			{servicio.titulo}
+			Pedidos custom
 		</h1>
-		<span class="mt-3 block h-1 w-100 max-w-full bg-(--accent)"></span>
+		<span class="mt-3 block h-1 w-16 bg-(--accent)"></span>
 
-		<p class="mt-10 max-w-2xl text-xl text-gray-600">{servicio.descripcion}</p>
+		<p class="mt-6 max-w-2xl text-lg text-gray-600">
+			¿Buscas un modelo concreto, con su motor, su color y su equipamiento? Dinos qué quieres y lo localizamos por ti.
+		</p>
 
 		<div class="mt-10 flex flex-wrap gap-4">
 			<a

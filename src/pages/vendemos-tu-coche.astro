@@ -1,0 +1,91 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { CONTACTO, WHATSAPP_ENLACE } from '../lib/contacto';
+
+const pasos = [
+	{
+		titulo: 'Lo vemos y ponemos precio',
+		texto:
+			'Revisamos el coche, miramos a cuánto se está vendiendo el mismo modelo y acordamos contigo un precio de salida realista.',
+	},
+	{
+		titulo: 'Lo preparamos y lo publicamos',
+		texto:
+			'Se expone en nuestras instalaciones. Nosotros hacemos las fotos, redactamos el anuncio y lo movemos en los portales.',
+	},
+	{
+		titulo: 'Atendemos a los interesados',
+		texto:
+			'Filtramos llamadas, enseñamos el coche y acompañamos las pruebas. Tú no tienes que quedar con desconocidos ni dar tu teléfono.',
+	},
+	{
+		titulo: 'Cobras cuando se vende',
+		texto:
+			'Cerramos la operación, hacemos el papeleo del cambio de titularidad y te pagamos. Hasta entonces el coche sigue siendo tuyo.',
+	},
+];
+---
+
+<Layout
+	title="Vendemos tu coche – Autoclub Trackdays"
+	description="Vendemos tu coche en Madrid: lo exponemos, lo anunciamos y atendemos a los compradores. Tú cobras cuando se vende."
+>
+	<section class="mx-auto max-w-6xl px-6 py-16">
+		<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
+			Vendemos tu coche
+		</h1>
+		<span class="mt-3 block h-1 w-16 bg-(--accent)"></span>
+
+		<p class="mt-6 max-w-2xl text-lg text-gray-600">
+			Lo exponemos y lo vendemos por ti, sin que tengas que atender a nadie.
+		</p>
+
+		<div class="mt-14 grid items-start gap-12 lg:grid-cols-[1.8fr_1fr] lg:gap-16">
+			<div>
+				<p class="text-sm tracking-wide text-gray-500 uppercase">Cómo funciona</p>
+
+				<ol class="mt-6 border-t border-gray-200">
+					{
+						pasos.map((paso, indice) => (
+							<li class="flex items-start gap-6 border-b border-gray-200 py-6">
+								<span class="pt-0.5 text-sm font-semibold text-(--accent)">
+									{String(indice + 1).padStart(2, '0')}
+								</span>
+
+								<div>
+									<h2 class="text-lg font-semibold text-gray-900">{paso.titulo}</h2>
+									<p class="mt-1 text-gray-600">{paso.texto}</p>
+								</div>
+							</li>
+						))
+					}
+				</ol>
+			</div>
+
+			<aside class="border border-gray-200 bg-gray-50 p-8 lg:sticky lg:top-28">
+				<p class="text-sm tracking-wide text-gray-500 uppercase">¿Lo hablamos?</p>
+
+				<p class="mt-4 text-gray-600">
+					Cuéntanos qué coche tienes y te decimos qué salida tiene y en cuánto lo pondríamos.
+				</p>
+
+				<div class="mt-6 flex flex-col gap-3">
+					<a
+						href={`tel:${CONTACTO.telefono.tel}`}
+						class="rounded-sm bg-(--accent) px-6 py-3 text-center font-semibold text-black transition hover:-translate-y-1 hover:bg-(--accent-strong)"
+					>
+						Llamar {CONTACTO.telefono.texto}
+					</a>
+					<a
+						href={WHATSAPP_ENLACE}
+						target="_blank"
+						rel="noopener"
+						class="rounded-sm border border-gray-300 bg-white px-6 py-3 text-center font-semibold text-gray-900 transition hover:-translate-y-1 hover:border-gray-900"
+					>
+						WhatsApp
+					</a>
+				</div>
+			</aside>
+		</div>
+	</section>
+</Layout>
