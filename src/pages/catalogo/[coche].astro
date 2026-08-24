@@ -1,0 +1,573 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { CONTACTO } from '../../lib/contacto';
+import { secciones } from '../../lib/ficha';
+import {
+	cambioTexto,
+	fotos,
+	kmTexto,
+	nombreCorto,
+	potenciaTexto,
+	precios,
+	precioTexto,
+	slugCoche,
+} from '../../lib/coches';
+
+export async function getStaticPaths() {
+	const enStock = await getCollection('coches');
+	const vendidos = await getCollection('vendidos');
+
+	const todos = [
+		...enStock.map((coche) => ({ coche, vendido: false })),
+		...vendidos.map((coche) => ({ coche, vendido: true })),
+	];
+
+	// Con la referencia dentro del slug no debería colisionar nunca, pero si el
+	// origen repitiera una referencia se verían dos coches en la misma URL.
+	const vistos = new Set<string>();
+
+	return todos.map(({ coche, vendido }) => {
+		const slug = slugCoche(coche.data);
+		if (vistos.has(slug)) throw new Error(`Dos coches comparten la URL /catalogo/${slug}`);
+		vistos.add(slug);
+
+		return { params: { coche: slug }, props: { coche, vendido } };
+	});
+}
+
+interface Props {
+	coche: CollectionEntry<'coches'>;
+	vendido: boolean;
+}
+
+const { coche, vendido } = Astro.props;
+const { data } = coche;
+
+const galeria = fotos(coche.id);
+const { contado, financiado } = precios(data, coche.body);
+const nombre = nombreCorto(data);
+
+// Resumen de cabecera: lo que se mira antes de bajar a la ficha completa.
+const resumen = [
+	{ campo: 'Kilometraje', valor: kmTexto(data.mileage_km) },
+	{ campo: 'Fecha', valor: data.first_registration },
+	{ campo: 'Potencia', valor: potenciaTexto(data) },
+	{ campo: 'Cambio', valor: cambioTexto(data.transmission) },
+	{ campo: 'Combustible', valor: data.fuel },
+	{ campo: 'Color', valor: data.color },
+].filter((dato): dato is { campo: string; valor: string } => Boolean(dato.valor));
+
+const todas = secciones(coche.body);
+
+// Lista blanca, no negra: cada anuncio trae las secciones que le da la gana
+// (hay uno que convierte su titular en un ## con los extras debajo), así que
+// solo se pintan como tabla las tres que se sabe que lo son.
+const TABLAS = ['Ficha técnica', 'Dimensiones y pesos', 'Estado e historial'];
+
+// Ni se pintan ni pasan a comentarios: datos del propio concesionario, la nota
+// del volcado, el consumo y el equipamiento, que se quitaron a propósito.
+const DESCARTADAS = ['Vendedor', 'Imágenes', 'Consumo y emisiones', 'Equipamiento'];
+
+const bloques = todas
+	.filter((seccion) => TABLAS.includes(seccion.titulo))
+	.map((seccion) => {
+		if (seccion.titulo !== 'Ficha técnica') return seccion;
+
+		const kw = seccion.filas.find((fila) => fila.campo === 'Potencia (kW)')?.valor;
+
+		return {
+			...seccion,
+			filas: seccion.filas
+				.filter((fila) => !['Estado', 'Potencia (kW)'].includes(fila.campo))
+				.map((fila) => {
+					if (fila.campo === 'Primera matriculación') return { ...fila, campo: 'Fecha' };
+					if (fila.campo === 'Potencia' && kw) return { ...fila, valor: `${fila.valor} (${kw})` };
+					return fila;
+				}),
+		};
+	});
+
+// Se descarta lo que repite el precio o la coletilla de la financiación, y los
+// títulos sueltos, que se reconocen por ser demasiado cortos para ser una frase.
+const esRuido = (parrafo: string) =>
+	parrafo.length < 40 ||
+	/precio/i.test(parrafo) ||
+	/financiaci[óo]n|entidad financiera|sujeto a/i.test(parrafo) ||
+	/^(extras|equipamiento)/i.test(parrafo);
+
+/** Los puntos de una lista se unen en un párrafo: aquí no hay etiquetas. */
+const comoTexto = (items: string[]) =>
+	items
+		.map((item) => item.trim().replace(/\.$/, ''))
+		.filter(Boolean)
+		.join('. ') + '.';
+
+// Todo lo que no es tabla ni está descartado acaba en comentarios, como texto.
+const comentarios = todas
+	.filter(
+		(seccion) => !TABLAS.includes(seccion.titulo) && !DESCARTADAS.includes(seccion.titulo),
+	)
+	.flatMap((seccion) => [
+		...seccion.parrafos.filter((parrafo) => !esRuido(parrafo)),
+		...seccion.grupos.filter((grupo) => grupo.items.length > 0).map((grupo) => comoTexto(grupo.items)),
+	]);
+
+const mensajeWhatsapp = encodeURIComponent(
+	`Hola, me interesa el ${nombre} ${data.variant} (ref. ${data.reference}).`,
+);
+---
+
+<Layout title={`${nombre} ${data.variant} – Autoclub Trackdays`}>
+	<section class="mx-auto max-w-6xl px-6 py-10">
+		<nav aria-label="Migas" class="flex items-center gap-3 text-base text-gray-500">
+			<a
+				href="/catalogo"
+				aria-label="Volver al catálogo"
+				class="group flex items-center gap-3 transition hover:text-black"
+			>
+				<svg
+					viewBox="0 0 20 20"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="h-5 w-5 transition-transform group-hover:-translate-x-1"
+					aria-hidden="true"
+				>
+					<path d="M16 10H4m0 0 4-4m-4 4 4 4"></path>
+				</svg>
+				Catálogo
+			</a>
+			<span>/</span>
+			<span class="text-gray-900">{nombre}</span>
+		</nav>
+
+		<div class="mt-8 grid gap-10 lg:grid-cols-5 lg:items-start">
+			<div class="lg:col-span-3">
+				<div class="relative overflow-hidden rounded-sm border border-gray-200 bg-gray-100">
+					<button
+						type="button"
+						data-abrir-galeria
+						aria-label="Ver las fotos en grande"
+						class="block w-full cursor-zoom-in"
+					>
+						<img
+							data-foto-principal
+							src={galeria[0]}
+							alt={`${nombre} ${data.variant}`}
+							width="1200"
+							height="900"
+							class="aspect-4/3 w-full object-cover"
+						/>
+					</button>
+
+					{
+						vendido && (
+							<span class="absolute top-4 left-4 bg-black px-4 py-2 text-sm font-semibold tracking-wide text-white uppercase">
+								Vendido
+							</span>
+						)
+					}
+
+					<span
+						data-contador
+						class="absolute right-4 bottom-4 rounded-sm bg-black/70 px-3 py-1 text-sm font-medium text-white"
+					>
+						1 / {galeria.length}
+					</span>
+
+					{
+						galeria.length > 1 && (
+							<>
+								<button
+									type="button"
+									data-navegar="anterior"
+									aria-label="Foto anterior"
+									class="absolute top-1/2 left-4 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full border border-gray-200 bg-white text-black shadow-lg transition hover:scale-110 hover:border-(--accent) hover:bg-(--accent)"
+								>
+									<svg
+										viewBox="0 0 20 20"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="h-4 w-4"
+										aria-hidden="true"
+									>
+										<path d="M12 4 6 10l6 6" />
+									</svg>
+								</button>
+
+								<button
+									type="button"
+									data-navegar="siguiente"
+									aria-label="Foto siguiente"
+									class="absolute top-1/2 right-4 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full border border-gray-200 bg-white text-black shadow-lg transition hover:scale-110 hover:border-(--accent) hover:bg-(--accent)"
+								>
+									<svg
+										viewBox="0 0 20 20"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="h-4 w-4"
+										aria-hidden="true"
+									>
+										<path d="m8 4 6 6-6 6" />
+									</svg>
+								</button>
+							</>
+						)
+					}
+				</div>
+
+				{
+					galeria.length > 1 && (
+						<ul
+							data-miniaturas
+							class="mt-3 flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"
+						>
+							{galeria.map((foto, indice) => (
+								<li>
+									<button
+										type="button"
+										data-foto={foto}
+										data-indice={indice}
+										aria-label={`Foto ${indice + 1}`}
+										aria-current={indice === 0}
+										class="block w-24 shrink-0 overflow-hidden rounded-sm border-2 border-transparent transition hover:border-gray-400 aria-current:border-(--accent)"
+									>
+										<img
+											src={foto}
+											alt=""
+											loading="lazy"
+											width="192"
+											height="144"
+											class="aspect-4/3 w-full object-cover"
+										/>
+									</button>
+								</li>
+							))}
+						</ul>
+					)
+				}
+
+				<dialog
+					data-galeria
+					class="m-0 h-full max-h-none w-full max-w-none bg-transparent p-0 backdrop:bg-black/90"
+				>
+					{/* El clic sobre este contenedor, es decir fuera de la foto, cierra. */}
+					<div data-fondo class="flex h-full w-full flex-col">
+						<div class="flex justify-end p-4">
+							<button
+								type="button"
+								data-cerrar-galeria
+								aria-label="Cerrar"
+								class="grid h-12 w-12 place-items-center rounded-full border border-white/30 text-white transition hover:border-(--accent) hover:bg-(--accent) hover:text-black"
+							>
+								<svg
+									viewBox="0 0 20 20"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									class="h-5 w-5"
+									aria-hidden="true"
+								>
+									<path d="m5 5 10 10M15 5 5 15" />
+								</svg>
+							</button>
+						</div>
+
+						<div data-fondo class="relative flex min-h-0 flex-1 items-center justify-center px-4">
+							<img
+								data-foto-principal
+								src={galeria[0]}
+								alt={`${nombre} ${data.variant}`}
+								class="max-h-full max-w-full object-contain"
+							/>
+
+							{
+								galeria.length > 1 && (
+									<>
+										<button
+											type="button"
+											data-navegar="anterior"
+											aria-label="Foto anterior"
+											class="absolute top-1/2 left-4 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full border border-gray-200 bg-white text-black shadow-lg transition hover:scale-110 hover:border-(--accent) hover:bg-(--accent)"
+										>
+											<svg
+												viewBox="0 0 20 20"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												class="h-4 w-4"
+												aria-hidden="true"
+											>
+												<path d="M12 4 6 10l6 6" />
+											</svg>
+										</button>
+
+										<button
+											type="button"
+											data-navegar="siguiente"
+											aria-label="Foto siguiente"
+											class="absolute top-1/2 right-4 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full border border-gray-200 bg-white text-black shadow-lg transition hover:scale-110 hover:border-(--accent) hover:bg-(--accent)"
+										>
+											<svg
+												viewBox="0 0 20 20"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												class="h-4 w-4"
+												aria-hidden="true"
+											>
+												<path d="m8 4 6 6-6 6" />
+											</svg>
+										</button>
+									</>
+								)
+							}
+						</div>
+
+						<div data-fondo class="flex items-center justify-between gap-4 p-4">
+							<span data-contador class="text-sm font-medium text-white">
+								1 / {galeria.length}
+							</span>
+						</div>
+
+					<!-- El scroll vive en el contenedor y la lista se centra con mx-auto:
+					     con justify-center, al desbordar quedarían fotos inalcanzables
+					     por la izquierda. -->
+					<div
+						class="overflow-x-auto pb-6 [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"
+					>
+						<ul class="mx-auto flex w-max gap-3 px-4">
+							{galeria.map((foto, indice) => (
+								<li>
+									<button
+										type="button"
+										data-foto={foto}
+										data-indice={indice}
+										aria-label={`Foto ${indice + 1}`}
+										aria-current={indice === 0}
+										class="block w-20 shrink-0 overflow-hidden rounded-sm border-2 border-transparent opacity-60 transition hover:opacity-100 aria-current:border-(--accent) aria-current:opacity-100"
+									>
+										<img
+											src={foto}
+											alt=""
+											loading="lazy"
+											width="160"
+											height="120"
+											class="aspect-4/3 w-full object-cover"
+										/>
+									</button>
+								</li>
+							))}
+							</ul>
+						</div>
+					</div>
+				</dialog>
+
+				<div class="mt-14 flex flex-col gap-12 border-t border-gray-200 pt-12">
+					{
+						bloques.map((seccion) => (
+							<section>
+								<h2 class="text-lg font-semibold tracking-wide text-gray-900 uppercase">
+									{seccion.titulo}
+								</h2>
+								<span class="mt-2 block h-0.5 w-12 bg-(--accent)" />
+
+								{seccion.filas.length > 0 && (
+									<dl class="mt-5 grid gap-x-12 sm:grid-cols-2">
+										{seccion.filas.map((fila) => (
+											<div class="flex justify-between gap-4 border-b border-gray-100 py-2 text-base">
+												<dt class="text-gray-500">{fila.campo}</dt>
+												<dd class="text-right font-medium text-gray-900">{fila.valor}</dd>
+											</div>
+										))}
+									</dl>
+								)}
+
+							</section>
+						))
+					}
+
+					{
+						comentarios.length > 0 && (
+							<section>
+								<h2 class="text-lg font-semibold tracking-wide text-gray-900 uppercase">
+									Comentarios
+								</h2>
+								<span class="mt-2 block h-0.5 w-12 bg-(--accent)" />
+
+								<div class="mt-5 flex flex-col gap-3 text-base leading-relaxed text-gray-600">
+									{comentarios.map((parrafo) => (
+										<p>{parrafo}</p>
+									))}
+								</div>
+							</section>
+						)
+					}
+				</div>
+			</div>
+
+			<div class="lg:col-span-2 lg:sticky lg:top-24">
+				<div>
+					<h1 class="text-4xl font-semibold tracking-tight text-gray-900">{nombre}</h1>
+					<p class="mt-1 text-xl text-gray-600">{data.variant}</p>
+
+					<div class="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-gray-200 pt-6">
+						<div>
+							<p class="text-base tracking-wide text-gray-500 uppercase">Al contado</p>
+							<p class="text-5xl font-bold text-gray-900">{precioTexto(contado)}</p>
+						</div>
+
+						{
+							financiado && (
+								<div class="text-right">
+									<p class="text-base tracking-wide text-gray-500 uppercase">Financiado</p>
+									<p class="text-4xl font-semibold text-emerald-800">{precioTexto(financiado)}</p>
+								</div>
+							)
+						}
+					</div>
+
+					<dl class="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-gray-200 pt-6 text-base">
+						{
+							resumen.map((dato) => (
+								<div class="flex justify-between gap-2">
+									<dt class="text-gray-500">{dato.campo}</dt>
+									<dd class="text-right font-medium text-gray-900">{dato.valor}</dd>
+								</div>
+							))
+						}
+					</dl>
+
+					{
+						vendido ? (
+							<div class="mt-8 border-t border-gray-200 pt-6">
+								<p class="text-gray-600">
+									Este coche ya está vendido, pero solemos tener unidades parecidas.
+								</p>
+								<a
+									href="/catalogo"
+									class="mt-4 inline-flex items-center gap-2 border-b-2 border-(--accent) pb-1 text-sm font-semibold tracking-wide text-black uppercase transition hover:translate-x-3"
+								>
+									Ver coches disponibles
+								</a>
+							</div>
+						) : (
+							<div class="mt-8 flex flex-wrap gap-3 border-t border-gray-200 pt-6">
+								<a
+									href={`tel:${CONTACTO.telefono.tel}`}
+									class="rounded-sm bg-(--accent) px-8 py-4 text-lg font-semibold text-black transition hover:-translate-y-1 hover:bg-(--accent-strong)"
+								>
+									Llamar {CONTACTO.telefono.texto}
+								</a>
+								<a
+									href={`https://wa.me/${CONTACTO.whatsapp.numero}?text=${mensajeWhatsapp}`}
+									target="_blank"
+									rel="noopener"
+									class="rounded-sm border border-gray-300 px-8 py-4 text-lg font-semibold text-gray-900 transition hover:-translate-y-1 hover:border-gray-900"
+								>
+									WhatsApp
+								</a>
+							</div>
+						)
+					}
+
+				</div>
+			</div>
+		</div>
+
+	</section>
+</Layout>
+
+<script>
+	// La galería se pinta dos veces: en la página y dentro del panel a pantalla
+	// completa. Un solo índice manda sobre las dos, así que al cerrar el panel la
+	// foto de la página es la última que se estaba mirando.
+	const principales = [...document.querySelectorAll<HTMLImageElement>('[data-foto-principal]')];
+	const contadores = [...document.querySelectorAll<HTMLElement>('[data-contador]')];
+	const miniaturas = [...document.querySelectorAll<HTMLButtonElement>('[data-foto]')];
+	const panel = document.querySelector<HTMLDialogElement>('[data-galeria]');
+
+	const total = new Set(miniaturas.map((boton) => boton.dataset.indice)).size;
+
+	if (principales.length > 0 && total > 0) {
+		let actual = 0;
+
+		const mostrar = (indice: number) => {
+			actual = (indice + total) % total;
+
+			const elegida = miniaturas.find((boton) => Number(boton.dataset.indice) === actual);
+			if (!elegida) return;
+
+			principales.forEach((img) => (img.src = elegida.dataset.foto!));
+			contadores.forEach((c) => (c.textContent = `${actual + 1} / ${total}`));
+
+			miniaturas.forEach((boton) => {
+				const activa = Number(boton.dataset.indice) === actual;
+				boton.setAttribute('aria-current', String(activa));
+				if (activa) boton.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+			});
+		};
+
+		miniaturas.forEach((boton) =>
+			boton.addEventListener('click', () => mostrar(Number(boton.dataset.indice))),
+		);
+
+		document.querySelectorAll<HTMLButtonElement>('[data-navegar]').forEach((boton) => {
+			boton.addEventListener('click', () =>
+				mostrar(actual + (boton.dataset.navegar === 'siguiente' ? 1 : -1)),
+			);
+		});
+
+		document.addEventListener('keydown', (evento) => {
+			if (evento.key === 'ArrowRight') mostrar(actual + 1);
+			if (evento.key === 'ArrowLeft') mostrar(actual - 1);
+		});
+
+		if (panel) {
+			const abrir = () => {
+				panel.showModal();
+				// Sin esto la página de detrás sigue desplazándose con la rueda.
+				document.body.classList.add('overflow-hidden');
+				mostrar(actual);
+			};
+
+			const cerrar = () => {
+				panel.close();
+				document.body.classList.remove('overflow-hidden');
+			};
+
+			document
+				.querySelectorAll('[data-abrir-galeria]')
+				.forEach((boton) => boton.addEventListener('click', abrir));
+
+			document
+				.querySelectorAll('[data-cerrar-galeria]')
+				.forEach((boton) => boton.addEventListener('click', cerrar));
+
+			// Cierra al pulsar fuera de la foto: el fondo, el propio <dialog> o los
+			// huecos vacíos alrededor. Sobre la imagen o los botones no cierra.
+			panel.addEventListener('click', (evento) => {
+				const destino = evento.target as HTMLElement;
+				if (destino === panel || destino.hasAttribute('data-fondo')) cerrar();
+			});
+
+			// Escape lo cierra por su cuenta, pero hay que soltar el scroll igual.
+			panel.addEventListener('close', () => document.body.classList.remove('overflow-hidden'));
+		}
+	}
+</script>

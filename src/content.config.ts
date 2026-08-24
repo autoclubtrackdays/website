@@ -39,4 +39,15 @@ const coches = defineCollection({
 	}),
 });
 
-export const collections = { coches };
+/** Un coche vendido es el mismo .md movido a src/content/vendidos/. Su ficha
+ *  sigue publicándose con el distintivo de vendido, pero sale del catálogo. */
+const vendidos = defineCollection({
+	loader: glob({
+		base: './src/content/vendidos',
+		pattern: '**/*.md',
+		generateId: ({ entry }) => entry.split('/')[0],
+	}),
+	schema: coches.schema,
+});
+
+export const collections = { coches, vendidos };

@@ -1,6 +1,14 @@
 ---
 import type { CollectionEntry } from 'astro:content';
-import { cambioTexto, kmTexto, nombreCorto, portada, precioTexto } from '../lib/coches';
+import {
+	cambioTexto,
+	kmTexto,
+	nombreCorto,
+	portada,
+	precios,
+	precioTexto,
+	rutaCoche,
+} from '../lib/coches';
 
 interface Props {
 	coche: CollectionEntry<'coches'>;
@@ -8,9 +16,14 @@ interface Props {
 
 const { coche } = Astro.props;
 const { data } = coche;
+
+const { contado } = precios(data, coche.body);
 ---
 
-<div class="block overflow-hidden rounded-sm border border-gray-200 bg-white">
+<a
+	href={rutaCoche(data)}
+	class="block overflow-hidden rounded-sm border border-gray-200 bg-white transition hover:border-gray-900"
+>
 	<img
 		src={portada(coche.id)}
 		alt={data.title}
@@ -30,6 +43,6 @@ const { data } = coche;
 			}
 		</p>
 
-		<p class="mt-4 text-lg font-semibold text-gray-900">{precioTexto(data.price_eur)}</p>
+		<p class="mt-4 text-lg font-semibold text-gray-900">{precioTexto(contado)}</p>
 	</div>
-</div>
+</a>

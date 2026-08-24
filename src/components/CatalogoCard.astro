@@ -7,7 +7,9 @@ import {
 	nombreCorto,
 	portada,
 	potenciaTexto,
+	precios,
 	precioTexto,
+	rutaCoche,
 } from '../lib/coches';
 
 interface Props {
@@ -17,6 +19,8 @@ interface Props {
 const { coche } = Astro.props;
 const { data } = coche;
 
+const { contado, financiado } = precios(data, coche.body);
+
 // Una fila por pareja: el primer dato va a la izquierda y el segundo a la derecha.
 const especificaciones = [
 	[kmTexto(data.mileage_km), data.first_registration],
@@ -25,7 +29,10 @@ const especificaciones = [
 ];
 ---
 
-<div class="flex flex-col overflow-hidden border border-gray-200 bg-white">
+<a
+	href={rutaCoche(data)}
+	class="flex flex-col overflow-hidden border border-gray-200 bg-white transition hover:border-gray-900"
+>
 	<img
 		src={portada(coche.id)}
 		alt={data.title}
@@ -39,11 +46,20 @@ const especificaciones = [
 		<h3 class="text-xl font-semibold text-gray-900">{nombreCorto(data)}</h3>
 		<p class="mt-0.5 text-lg text-gray-600">{data.variant}</p>
 
-		<div class="mt-5 flex flex-wrap items-end justify-between gap-x-18 gap-y-2">
+		<div class="mt-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
 			<div>
 				<p class="text-base tracking-wide text-gray-500 uppercase">Al contado</p>
-				<p class="text-3xl font-bold text-gray-900">{precioTexto(data.price_eur)}</p>
+				<p class="text-4xl font-bold text-gray-900">{precioTexto(contado)}</p>
 			</div>
+
+			{
+				financiado && (
+					<div class="text-right">
+						<p class="text-base tracking-wide text-gray-500 uppercase">Financiado</p>
+						<p class="text-2xl font-semibold text-emerald-800">{precioTexto(financiado)}</p>
+					</div>
+				)
+			}
 		</div>
 
 		<ul
@@ -59,4 +75,4 @@ const especificaciones = [
 			}
 		</ul>
 	</div>
-</div>
+</a>
