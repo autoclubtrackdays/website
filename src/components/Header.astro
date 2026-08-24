@@ -1,10 +1,6 @@
 ---
 import { CONTACTO } from '../lib/contacto';
-
-const navLinks = [
-	{ label: 'Catálogo', href: '/catalogo' },
-	{ label: 'Contacto', href: '/#contacto' },
-];
+import { SERVICIOS } from '../lib/servicios';
 ---
 
 <header class="sticky top-0 z-50 border-b border-white/10 bg-black/90 backdrop-blur">
@@ -22,18 +18,68 @@ const navLinks = [
 
 		<nav aria-label="Principal">
 			<ul class="flex items-center gap-8">
-				{
-					navLinks.map((link) => (
-						<li>
-							<a
-								href={link.href}
-								class="relative text-sm font-medium tracking-wide text-gray-300 uppercase transition after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-0 after:bg-(--accent) after:transition-all hover:text-white hover:after:w-full"
-							>
-								{link.label}
-							</a>
-						</li>
-					))
-				}
+				<li>
+					<a
+						href="/catalogo"
+						class="relative text-sm font-medium tracking-wide text-gray-300 uppercase transition after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-0 after:bg-(--accent) after:transition-all hover:text-white hover:after:w-full"
+					>
+						Catálogo
+					</a>
+				</li>
+
+				<li class="relative" data-menu>
+					<button
+						type="button"
+						data-menu-boton
+						aria-haspopup="true"
+						aria-expanded="false"
+						class="relative flex items-center gap-2 text-sm font-medium tracking-wide text-gray-300 uppercase transition after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-0 after:bg-(--accent) after:transition-all hover:text-white hover:after:w-full"
+					>
+						Servicios
+						<svg
+							data-menu-flecha
+							viewBox="0 0 20 20"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="h-4 w-4 transition-transform duration-200"
+							aria-hidden="true"
+						>
+							<path d="m5 8 5 5 5-5"></path>
+						</svg>
+					</button>
+
+					<!-- El panel arranca pegado al botón y el hueco lo hace su propio
+					     padding: si fuera un margen, el ratón cruzaría un vacío por el
+					     que el menú se cerraría al bajar. -->
+					<div data-menu-lista hidden class="absolute top-full left-0 z-40 pt-3">
+						<ul class="min-w-64 border border-white/10 bg-black/95 py-1 backdrop-blur">
+							{
+								SERVICIOS.map((servicio) => (
+									<li>
+										<a
+											href={servicio.href}
+											class="block border-l-2 border-transparent py-3 pl-4 text-sm font-medium tracking-wide whitespace-nowrap text-gray-300 uppercase transition hover:border-(--accent) hover:bg-white/5 hover:text-white focus-visible:border-(--accent) focus-visible:bg-white/5 focus-visible:text-white focus-visible:outline-none"
+										>
+											{servicio.titulo}
+										</a>
+									</li>
+								))
+							}
+						</ul>
+					</div>
+				</li>
+
+				<li>
+					<a
+						href="/#contacto"
+						class="relative text-sm font-medium tracking-wide text-gray-300 uppercase transition after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-0 after:bg-(--accent) after:transition-all hover:text-white hover:after:w-full"
+					>
+						Contacto
+					</a>
+				</li>
 
 				<li class="hidden sm:block">
 					<a
@@ -47,3 +93,70 @@ const navLinks = [
 		</nav>
 	</div>
 </header>
+
+<script>
+	// Menú de servicios. Se abre al pasar por encima, y también con clic: en
+	// pantalla táctil no hay hover que valga.
+	const menu = document.querySelector<HTMLElement>('[data-menu]');
+	const boton = menu?.querySelector<HTMLButtonElement>('[data-menu-boton]');
+	const lista = menu?.querySelector<HTMLElement>('[data-menu-lista]');
+	const flecha = menu?.querySelector<SVGElement>('[data-menu-flecha]');
+
+	if (menu && boton && lista) {
+		const enlaces = [...lista.querySelectorAll<HTMLAnchorElement>('a')];
+
+		// El estado va aparte y no se lee de `lista.hidden`, que además de ser
+		// `boolean | string` (por `hidden="until-found"`) obliga a convertirlo.
+		let abierto = false;
+
+		const abrir = (mostrar: boolean) => {
+			abierto = mostrar;
+			lista.hidden = !mostrar;
+			boton.setAttribute('aria-expanded', String(mostrar));
+			flecha?.classList.toggle('rotate-180', mostrar);
+		};
+
+		// Se abre al pasar por encima. El pequeño retardo al salir perdona el
+		// movimiento en diagonal hacia el panel.
+		let cierre: number | undefined;
+
+		const cancelarCierre = () => window.clearTimeout(cierre);
+
+		menu.addEventListener('mouseenter', () => {
+			cancelarCierre();
+			abrir(true);
+		});
+
+		menu.addEventListener('mouseleave', () => {
+			cancelarCierre();
+			cierre = window.setTimeout(() => abrir(false), 150);
+		});
+
+		boton.addEventListener('click', () => abrir(!abierto));
+
+		document.addEventListener('click', (evento) => {
+			if (!menu.contains(evento.target as Node)) abrir(false);
+		});
+
+		menu.addEventListener('keydown', (evento) => {
+			if (evento.key === 'Escape') {
+				abrir(false);
+				boton.focus();
+				return;
+			}
+
+			if (evento.key !== 'ArrowDown' && evento.key !== 'ArrowUp') return;
+			evento.preventDefault();
+
+			if (!abierto) {
+				abrir(true);
+				enlaces[0]?.focus();
+				return;
+			}
+
+			const actual = enlaces.indexOf(document.activeElement as HTMLAnchorElement);
+			const salto = evento.key === 'ArrowDown' ? 1 : -1;
+			enlaces[Math.min(Math.max(actual + salto, 0), enlaces.length - 1)]?.focus();
+		});
+	}
+</script>

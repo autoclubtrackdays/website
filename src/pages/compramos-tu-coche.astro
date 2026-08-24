@@ -1,0 +1,35 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { CONTACTO, WHATSAPP_ENLACE } from '../lib/contacto';
+import { SERVICIOS } from '../lib/servicios';
+
+const servicio = SERVICIOS.find((candidato) => candidato.href === '/compramos-tu-coche')!;
+---
+
+<Layout title={`${servicio.titulo} – Autoclub Trackdays`} description={servicio.descripcion}>
+	<section class="mx-auto max-w-6xl px-6 py-16">
+		<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
+			{servicio.titulo}
+		</h1>
+		<span class="mt-3 block h-1 w-100 max-w-full bg-(--accent)"></span>
+
+		<p class="mt-10 max-w-2xl text-xl text-gray-600">{servicio.descripcion}</p>
+
+		<div class="mt-10 flex flex-wrap gap-4">
+			<a
+				href={`tel:${CONTACTO.telefono.tel}`}
+				class="rounded-sm bg-(--accent) px-8 py-4 text-lg font-semibold text-black transition hover:-translate-y-1 hover:bg-(--accent-strong)"
+			>
+				Llamar {CONTACTO.telefono.texto}
+			</a>
+			<a
+				href={WHATSAPP_ENLACE}
+				target="_blank"
+				rel="noopener"
+				class="rounded-sm border border-gray-300 px-8 py-4 text-lg font-semibold text-gray-900 transition hover:-translate-y-1 hover:border-gray-900"
+			>
+				WhatsApp
+			</a>
+		</div>
+	</section>
+</Layout>

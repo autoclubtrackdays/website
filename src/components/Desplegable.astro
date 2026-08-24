@@ -83,12 +83,17 @@ const { campo, opciones, etiquetaFija } = Astro.props;
 
 		const opciones = [...lista.querySelectorAll<HTMLButtonElement>('[data-opcion]')];
 
-		const abrir = (abierto: boolean) => {
-			lista.hidden = !abierto;
-			boton.setAttribute('aria-expanded', String(abierto));
-			flecha?.classList.toggle('rotate-180', abierto);
+		// Igual que en el header: `lista.hidden` es `boolean | string`, así que el
+		// estado se lleva aparte.
+		let abierto = false;
 
-			if (abierto) {
+		const abrir = (mostrar: boolean) => {
+			abierto = mostrar;
+			lista.hidden = !mostrar;
+			boton.setAttribute('aria-expanded', String(mostrar));
+			flecha?.classList.toggle('rotate-180', mostrar);
+
+			if (mostrar) {
 				const elegida = opciones.find((o) => o.getAttribute('aria-selected') === 'true');
 				(elegida ?? opciones[0])?.focus();
 			}
@@ -116,7 +121,7 @@ const { campo, opciones, etiquetaFija } = Astro.props;
 			if (avisar) raiz.dispatchEvent(new CustomEvent('cambio', { bubbles: true }));
 		};
 
-		boton.addEventListener('click', () => abrir(lista.hidden));
+		boton.addEventListener('click', () => abrir(!abierto));
 
 		opciones.forEach((opcion) => {
 			opcion.addEventListener('click', () => {
@@ -137,7 +142,7 @@ const { campo, opciones, etiquetaFija } = Astro.props;
 				return;
 			}
 
-			if (lista.hidden) {
+			if (!abierto) {
 				if (evento.key === 'ArrowDown' || evento.key === 'Enter' || evento.key === ' ') {
 					evento.preventDefault();
 					abrir(true);
