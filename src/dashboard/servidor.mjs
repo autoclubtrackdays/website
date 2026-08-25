@@ -8,13 +8,13 @@
  */
 import { createServer } from 'node:http';
 import { execFile } from 'node:child_process';
-import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { AwsClient } from 'aws4fetch';
 import sharp from 'sharp';
-import { CAMPOS, generarTxt } from '../lib/formato-txt.mjs';
+import { CAMPOS, generarTxt, parsearTxt } from '../lib/formato-txt.mjs';
 
 const ejecutar = promisify(execFile);
 
@@ -22,6 +22,7 @@ const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ = join(AQUI, '..', '..');
 const COCHES = join(RAIZ, 'src', 'content', 'coches');
 const VENDIDOS = join(RAIZ, 'src', 'content', 'vendidos');
+const DESTACADOS = join(RAIZ, 'src', 'lib', 'destacados.ts');
 
 const PUERTO = 4322;
 
@@ -216,6 +217,172 @@ async function publicar(peticion, respuesta) {
 	}
 }
 
+/** Nombre de archivo a partir de los datos, con la referencia al final. */
+const nombreDeArchivo = (datos) =>
+	`${aSlug([datos.make, datos.model, datos.variant].filter(Boolean).join(' '))}-${datos.reference}`;
+
+/** Lee un .txt de coche y devuelve sus datos ya parseados. */
+async function leerEntrada(carpeta, id) {
+	const ruta = join(carpeta, `${id}.txt`);
+	const { datos, comentario } = parsearTxt(await readFile(ruta, 'utf8'));
+	return { ruta, datos, comentario };
+}
+
+/**
+ * Saca un coche de la lista de destacados.
+ *
+ * Sin esto, marcar como vendido o eliminar un coche destacado deja una
+ * referencia rota en src/lib/destacados.ts y el build falla entero: la web se
+ * quedaría sin actualizar y quien usa el panel no tendría forma de saber por qué.
+ */
+async function quitarDeDestacados(id) {
+	try {
+		const original = await readFile(DESTACADOS, 'utf8');
+		const limpio = original
+			.split('\n')
+			.filter((linea) => !linea.includes(`'${id}'`))
+			.join('\n');
+
+		if (limpio !== original) await writeFile(DESTACADOS, limpio, 'utf8');
+	} catch {
+		// Si el archivo no existe, no hay nada que limpiar.
+	}
+}
+
+/** Borra las fotos del coche en R2. Best effort: no se para el borrado por esto. */
+async function borrarFotos(referencia, cuantas) {
+	if (!r2Configurado() || !referencia || !cuantas) return 0;
+
+	const cliente = new AwsClient({
+		accessKeyId: R2.clave,
+		secretAccessKey: R2.secreto,
+		service: 's3',
+		region: 'auto',
+	});
+
+	let borradas = 0;
+
+	for (let indice = 1; indice <= cuantas; indice++) {
+		const nombre = String(indice).padStart(2, '0');
+		const url = `https://${R2.cuenta}.r2.cloudflarestorage.com/${R2.bucket}/coches/${referencia}/${nombre}.webp`;
+		const respuesta = await cliente.fetch(url, { method: 'DELETE' }).catch(() => null);
+		if (respuesta?.ok) borradas++;
+	}
+
+	return borradas;
+}
+
+/** Lista lo que hay en venta, para la pantalla de edición. */
+async function listarCoches(respuesta) {
+	let entradas = [];
+	try {
+		entradas = await readdir(COCHES, { withFileTypes: true });
+	} catch {
+		return json(respuesta, 200, { coches: [] });
+	}
+
+	const coches = [];
+
+	for (const entrada of entradas) {
+		if (entrada.isFile() && entrada.name.endsWith('.txt')) {
+			const id = entrada.name.replace(/\.txt$/, '');
+			const { datos } = await leerEntrada(COCHES, id);
+
+			coches.push({
+				id,
+				editable: true,
+				titulo: [datos.make, datos.model, datos.variant].filter(Boolean).join(' '),
+				referencia: datos.reference ?? '',
+				precio: datos.price_eur ?? '',
+				fotos: datos.images ?? 0,
+			});
+			continue;
+		}
+
+		// Entradas del volcado antiguo: se pueden vender o borrar, pero no editar
+		// desde aquí, porque su formato es otro.
+		if (entrada.isDirectory()) {
+			const md = join(COCHES, entrada.name, `${entrada.name}.md`);
+			const contenido = await readFile(md, 'utf8').catch(() => '');
+			const dato = (clave) => contenido.match(new RegExp(`^${clave}: *"?(.+?)"?$`, 'm'))?.[1] ?? '';
+
+			coches.push({
+				id: entrada.name,
+				editable: false,
+				titulo: dato('title'),
+				referencia: dato('reference'),
+				precio: dato('price_eur'),
+				fotos: Number(dato('images')) || 0,
+			});
+		}
+	}
+
+	coches.sort((a, b) => a.titulo.localeCompare(b.titulo));
+	json(respuesta, 200, { coches });
+}
+
+/** Devuelve un coche para rellenar el formulario de edición. */
+async function obtenerCoche(respuesta, id) {
+	const { datos, comentario } = await leerEntrada(COCHES, id);
+	json(respuesta, 200, { datos, comentario });
+}
+
+/** Reemplaza el .txt. Si cambia marca, modelo o versión, el archivo se renombra
+ *  para que su nombre siga cuadrando con la URL, que sale de esos mismos datos. */
+async function actualizarCoche(peticion, respuesta, id) {
+	const { datos = {}, comentario = '' } = JSON.parse(await leerCuerpo(peticion));
+	const anterior = await leerEntrada(COCHES, id);
+
+	// La referencia no se toca nunca: es lo que el cliente tiene apuntado.
+	const completos = { ...datos, reference: anterior.datos.reference };
+	const nuevoId = nombreDeArchivo(completos);
+
+	await writeFile(join(COCHES, `${nuevoId}.txt`), generarTxt(completos, comentario), 'utf8');
+
+	if (nuevoId !== id) {
+		await rm(anterior.ruta);
+		await quitarDeDestacados(id);
+	}
+
+	json(respuesta, 200, { id: nuevoId, renombrado: nuevoId !== id });
+}
+
+/** Mueve el coche a vendidos. Las fotos se quedan: su ficha sigue publicada. */
+async function marcarVendido(respuesta, id) {
+	const esTxt = await readFile(join(COCHES, `${id}.txt`), 'utf8').then(
+		() => true,
+		() => false,
+	);
+
+	const origen = esTxt ? join(COCHES, `${id}.txt`) : join(COCHES, id);
+	const destino = esTxt ? join(VENDIDOS, `${id}.txt`) : join(VENDIDOS, id);
+
+	await rename(origen, destino);
+	await quitarDeDestacados(id);
+
+	json(respuesta, 200, { vendido: true, id });
+}
+
+/** Borra el coche y, si se puede, sus fotos de R2. */
+async function eliminarCoche(respuesta, id) {
+	let referencia = '';
+	let fotos = 0;
+
+	const entrada = await leerEntrada(COCHES, id).catch(() => null);
+	if (entrada) {
+		referencia = String(entrada.datos.reference ?? '');
+		fotos = entrada.datos.images ?? 0;
+		await rm(entrada.ruta);
+	} else {
+		await rm(join(COCHES, id), { recursive: true, force: true });
+	}
+
+	await quitarDeDestacados(id);
+	const borradas = await borrarFotos(referencia, fotos);
+
+	json(respuesta, 200, { eliminado: true, fotosBorradas: borradas });
+}
+
 // --- Servidor --------------------------------------------------------------
 
 const servidor = createServer(async (peticion, respuesta) => {
@@ -236,6 +403,21 @@ const servidor = createServer(async (peticion, respuesta) => {
 
 		if (peticion.method === 'POST' && url.pathname === '/api/coche') {
 			return await altaCoche(peticion, respuesta);
+		}
+
+		if (peticion.method === 'GET' && url.pathname === '/api/coches') {
+			return await listarCoches(respuesta);
+		}
+
+		const deCoche = url.pathname.match(/^\/api\/coche\/([^/]+?)(\/vendido)?$/);
+
+		if (deCoche) {
+			const id = decodeURIComponent(deCoche[1]);
+
+			if (peticion.method === 'GET') return await obtenerCoche(respuesta, id);
+			if (peticion.method === 'PUT') return await actualizarCoche(peticion, respuesta, id);
+			if (peticion.method === 'DELETE') return await eliminarCoche(respuesta, id);
+			if (peticion.method === 'POST' && deCoche[2]) return await marcarVendido(respuesta, id);
 		}
 
 		if (peticion.method === 'POST' && url.pathname === '/api/fotos') {

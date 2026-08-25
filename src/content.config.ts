@@ -101,6 +101,11 @@ function lectorCoches(carpeta: string): Loader {
 	return {
 		name: 'coches',
 		load: async (contexto) => {
+			// Se vacía antes de recargar. El almacén de Astro sobrevive entre
+			// ejecuciones en node_modules/.astro/, así que sin esto un coche
+			// borrado del disco seguiría generando su página indefinidamente.
+			contexto.store.clear();
+
 			await antiguo.load(contexto);
 			await cargarTxt(carpeta, contexto);
 		},

@@ -271,6 +271,64 @@
 			.oculto {
 				display: none;
 			}
+
+			#lista table {
+				width: 100%;
+				margin-top: 1rem;
+				border-collapse: collapse;
+			}
+
+			#lista th {
+				padding: 0.5rem 0.5rem 0.5rem 0;
+				border-bottom: 1px solid var(--borde);
+				text-align: left;
+				font-size: 0.75rem;
+				text-transform: uppercase;
+				letter-spacing: 0.03em;
+				color: var(--gris);
+			}
+
+			#lista td {
+				padding: 0.75rem 0.5rem 0.75rem 0;
+				border-bottom: 1px solid #f3f4f6;
+				vertical-align: middle;
+			}
+
+			#lista td.ref {
+				font-variant-numeric: tabular-nums;
+				font-weight: 600;
+				white-space: nowrap;
+			}
+
+			#lista td.botones {
+				text-align: right;
+				white-space: nowrap;
+			}
+
+			#lista button {
+				padding: 0.375rem 0.75rem;
+				font-size: 0.8125rem;
+			}
+
+			#lista tr.antigua td:not(.botones) {
+				color: var(--gris);
+			}
+
+			.atras {
+				margin-top: 2rem;
+			}
+
+			.inicio {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 1rem;
+				margin-top: 2rem;
+			}
+
+			.inicio button {
+				padding: 1.5rem 2rem;
+				font-size: 1.0625rem;
+			}
 		</style>
 	</head>
 
@@ -281,7 +339,7 @@
 		</header>
 
 		<main>
-			<h1>Nuevo coche</h1>
+			<h1 id="titulo">Panel</h1>
 			<span class="barra"></span>
 
 			<div id="aviso-r2" class="aviso malo oculto">
@@ -289,9 +347,16 @@
 				<code>.env</code>.
 			</div>
 
-			<div class="acciones">
+			<div class="inicio" id="inicio">
 				<button class="principal" id="empezar">Añadir nuevo coche</button>
+				<button id="ver-lista">Coches en venta</button>
 			</div>
+
+			<div class="atras oculto" id="zona-atras">
+				<button id="atras">← Volver</button>
+			</div>
+
+			<section id="lista" class="oculto"></section>
 
 			<form id="formulario" class="oculto">
 				<h2>Fotos del coche</h2>
@@ -323,7 +388,7 @@
 		</main>
 
 		<dialog id="confirmacion">
-			<strong>¿Damos de alta este coche?</strong>
+			<strong id="pregunta">¿Damos de alta este coche?</strong>
 			<dl id="resumen"></dl>
 			<div class="acciones">
 				<button class="principal" id="confirmar">Sí, añadir</button>
@@ -340,10 +405,17 @@
 
 			// --- Formulario, dibujado desde la misma lista que parsea los .txt ----
 
-			function pintarCampos() {
+			function pintarCampos(valores = {}) {
+				// La fecha llega como MM/AAAA y en el formulario son dos controles.
+				const [mesPrevio = '', anioPrevio = ''] = String(
+					valores.first_registration ?? '',
+				).split('/');
+
 				$('campos').innerHTML = campos
 					.filter((campo) => !campo.automatico)
 					.map((campo) => {
+						const previo = valores[campo.clave] ?? '';
+						const valor = previo === '' ? '' : ` value="${String(previo).replace(/"/g, '&quot;')}"`;
 						const obligatorio = campo.obligatorio ? 'required' : '';
 						const marca = campo.obligatorio ? '' : ' <span class="opcional">(opcional)</span>';
 						const ayuda = campo.ayuda ? `<p class="ayuda">${campo.ayuda}</p>` : '';
@@ -352,24 +424,26 @@
 						let control;
 
 						if (campo.tipo === 'entero') {
-							control = `<input type="number" step="1" min="0" name="${campo.clave}" ${obligatorio} placeholder=" " />`;
+							control = `<input type="number" step="1" min="0" name="${campo.clave}"${valor} ${obligatorio} placeholder=" " />`;
 						} else if (campo.tipo === 'opciones' || campo.tipo === 'sino') {
 							const opciones = campo.tipo === 'sino' ? ['Sí', 'No'] : campo.opciones;
 							control = `<select name="${campo.clave}" ${obligatorio}>
 								<option value="">—</option>
-								${opciones.map((o) => `<option>${o}</option>`).join('')}
+								${opciones
+									.map((o) => `<option${String(previo) === String(o) ? ' selected' : ''}>${o}</option>`)
+									.join('')}
 							</select>`;
 						} else if (campo.tipo === 'fecha') {
 							const anio = new Date().getFullYear();
 							control = `<div class="fecha">
 								<select name="mes" ${obligatorio}>
 									<option value="">Mes</option>
-									${MESES.map((m) => `<option>${m}</option>`).join('')}
+									${MESES.map((m) => `<option${m === mesPrevio ? ' selected' : ''}>${m}</option>`).join('')}
 								</select>
-								<input type="number" name="anio" min="1950" max="${anio + 1}" step="1" placeholder="Año" ${obligatorio} />
+								<input type="number" name="anio" min="1950" max="${anio + 1}" step="1" placeholder="Año" value="${anioPrevio}" ${obligatorio} />
 							</div>`;
 						} else {
-							control = `<input type="text" name="${campo.clave}" ${obligatorio} placeholder=" " />`;
+							control = `<input type="text" name="${campo.clave}"${valor} ${obligatorio} placeholder=" " />`;
 						}
 
 						return `<div><label>${campo.etiqueta}${sufijo}${marca}${control}</label>${ayuda}</div>`;
@@ -473,6 +547,9 @@
 					`<div><dt>Fotos</dt><dd>${fotos.length}</dd></div>`,
 				].join('');
 
+				$('pregunta').textContent = editando
+					? '¿Guardamos los cambios de este coche?'
+					: '¿Damos de alta este coche?';
 				$('confirmacion').showModal();
 			});
 
@@ -486,6 +563,28 @@
 				$('confirmar').disabled = true;
 
 				try {
+					// Editar reemplaza el .txt y conserva referencia y fotos; solo se
+					// vuelven a subir si se ha elegido una carpeta nueva.
+					if (editando) {
+						const cambio = await fetch(`/api/coche/${encodeURIComponent(editando)}`, {
+							method: 'PUT',
+							headers: { 'content-type': 'application/json' },
+							body: JSON.stringify({ datos: recogerDatos(), comentario: $('comentario').value }),
+						}).then((r) => r.json());
+
+						if (cambio.error) throw new Error(cambio.error);
+
+						avisar(
+							`Coche actualizado.
+							 <div class="acciones"><button class="principal" id="publicar">Publicar en la web</button></div>`,
+							'bueno',
+						);
+
+						$('publicar').addEventListener('click', publicar);
+						editando = null;
+						return;
+					}
+
 					avisar('Creando la ficha…');
 
 					const alta = await fetch('/api/coche', {
@@ -515,7 +614,6 @@
 
 					$('publicar').addEventListener('click', publicar);
 					$('formulario').classList.add('oculto');
-					$('empezar').classList.remove('oculto');
 				} catch (error) {
 					avisar(`No se pudo completar: ${error.message}`, 'malo');
 				} finally {
@@ -543,20 +641,114 @@
 				);
 			}
 
-			// --- Arranque y cierre -------------------------------------------------
+			// --- Pantallas ---------------------------------------------------------
+
+			// `editando` guarda el id del coche que se está modificando; en null,
+			// el formulario da de alta uno nuevo.
+			let editando = null;
+
+			function mostrar(pantalla, titulo) {
+				$('titulo').textContent = titulo;
+				$('inicio').classList.toggle('oculto', pantalla !== 'inicio');
+				$('zona-atras').classList.toggle('oculto', pantalla === 'inicio');
+				$('lista').classList.toggle('oculto', pantalla !== 'lista');
+				$('formulario').classList.toggle('oculto', pantalla !== 'formulario');
+				if (pantalla !== 'formulario') $('resultado').innerHTML = '';
+			}
+
+			function irAlInicio() {
+				editando = null;
+				fotos = [];
+				$('formulario').reset();
+				pintarMiniaturas();
+				pintarCampos();
+				mostrar('inicio', 'Panel');
+			}
+
+			$('atras').addEventListener('click', irAlInicio);
+			$('cancelar').addEventListener('click', irAlInicio);
 
 			$('empezar').addEventListener('click', () => {
-				$('formulario').classList.remove('oculto');
-				$('empezar').classList.add('oculto');
-				$('resultado').innerHTML = '';
+				editando = null;
+				pintarCampos();
+				mostrar('formulario', 'Nuevo coche');
 			});
 
-			$('cancelar').addEventListener('click', () => {
-				$('formulario').reset();
-				$('formulario').classList.add('oculto');
-				$('empezar').classList.remove('oculto');
-				fotos = [];
-				pintarMiniaturas();
+			// --- Coches en venta ---------------------------------------------------
+
+			async function verLista() {
+				mostrar('lista', 'Coches en venta');
+				$('lista').innerHTML = '<p class="ayuda">Cargando…</p>';
+
+				const { coches } = await fetch('/api/coches').then((r) => r.json());
+
+				if (coches.length === 0) {
+					$('lista').innerHTML = '<p class="ayuda">No hay ningún coche en venta.</p>';
+					return;
+				}
+
+				const antiguas = coches.filter((coche) => !coche.editable).length;
+
+				$('lista').innerHTML = `
+					<table>
+						<thead>
+							<tr><th>Ref.</th><th>Coche</th><th>Precio</th><th>Fotos</th><th></th></tr>
+						</thead>
+						<tbody>
+							${coches
+								.map(
+									(coche) => `<tr class="${coche.editable ? '' : 'antigua'}">
+										<td class="ref">${coche.referencia}</td>
+										<td>${coche.titulo}</td>
+										<td>${coche.precio ? Number(coche.precio).toLocaleString('es-ES') + ' €' : ''}</td>
+										<td>${coche.fotos}</td>
+										<td class="botones">
+											${coche.editable ? `<button data-editar="${coche.id}">Editar</button>` : ''}
+											<button data-vendido="${coche.id}">Marcar vendido</button>
+											<button data-eliminar="${coche.id}">Eliminar</button>
+										</td>
+									</tr>`,
+								)
+								.join('')}
+						</tbody>
+					</table>
+					${antiguas > 0 ? `<p class="ayuda">Los ${antiguas} coches en gris son del volcado antiguo: se pueden vender o borrar, pero no editar desde aquí.</p>` : ''}
+				`;
+			}
+
+			$('ver-lista').addEventListener('click', verLista);
+
+			$('lista').addEventListener('click', async (evento) => {
+				const boton = evento.target.closest('button[data-editar], button[data-vendido], button[data-eliminar]');
+				if (!boton) return;
+
+				const { editar, vendido, eliminar } = boton.dataset;
+
+				if (editar) {
+					const coche = await fetch(`/api/coche/${encodeURIComponent(editar)}`).then((r) => r.json());
+
+					editando = editar;
+					pintarCampos(coche.datos);
+					$('comentario').value = coche.comentario ?? '';
+					fotos = [];
+					pintarMiniaturas();
+					mostrar('formulario', 'Editar coche');
+					return;
+				}
+
+				if (vendido) {
+					if (!confirm('¿Marcar este coche como vendido? Sale del catálogo pero su ficha sigue publicada.')) return;
+					await fetch(`/api/coche/${encodeURIComponent(vendido)}/vendido`, { method: 'POST' });
+				}
+
+				if (eliminar) {
+					if (!confirm('¿Eliminar este coche del todo? Se borra la ficha y sus fotos. No se puede deshacer.')) return;
+					await fetch(`/api/coche/${encodeURIComponent(eliminar)}`, { method: 'DELETE' });
+				}
+
+				await verLista();
+				avisar('Hecho. Recuerda pulsar Publicar para que el cambio llegue a la web. <div class="acciones"><button class="principal" id="publicar">Publicar en la web</button></div>', 'bueno');
+				$('publicar').addEventListener('click', publicar);
 			});
 
 			$('cerrar').addEventListener('click', async () => {
