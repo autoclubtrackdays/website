@@ -228,6 +228,28 @@ async function leerEntrada(carpeta, id) {
 	return { ruta, datos, comentario };
 }
 
+/** Ids de la lista de destacados, en el orden en que salen en el carrusel. */
+async function leerDestacados() {
+	const texto = await readFile(DESTACADOS, 'utf8').catch(() => '');
+	const bloque = texto.match(/export const DESTACADOS = \[([\s\S]*?)\]/);
+	return bloque ? [...bloque[1].matchAll(/'([^']+)'/g)].map((linea) => linea[1]) : [];
+}
+
+/** Reescribe solo el array, respetando el comentario de cabecera del archivo. */
+async function escribirDestacados(ids) {
+	const texto = await readFile(DESTACADOS, 'utf8');
+	const cuerpo = ids.map((id) => `\t'${id}',`).join('\n');
+
+	await writeFile(
+		DESTACADOS,
+		texto.replace(
+			/(export const DESTACADOS = \[)[\s\S]*?(\n\];)/,
+			`$1\n${cuerpo}$2`,
+		),
+		'utf8',
+	);
+}
+
 /**
  * Saca un coche de la lista de destacados.
  *
@@ -236,17 +258,10 @@ async function leerEntrada(carpeta, id) {
  * quedaría sin actualizar y quien usa el panel no tendría forma de saber por qué.
  */
 async function quitarDeDestacados(id) {
-	try {
-		const original = await readFile(DESTACADOS, 'utf8');
-		const limpio = original
-			.split('\n')
-			.filter((linea) => !linea.includes(`'${id}'`))
-			.join('\n');
+	const actuales = await leerDestacados();
+	if (!actuales.includes(id)) return;
 
-		if (limpio !== original) await writeFile(DESTACADOS, limpio, 'utf8');
-	} catch {
-		// Si el archivo no existe, no hay nada que limpiar.
-	}
+	await escribirDestacados(actuales.filter((otro) => otro !== id));
 }
 
 /** Borra las fotos del coche en R2. Best effort: no se para el borrado por esto. */
@@ -383,6 +398,29 @@ async function eliminarCoche(respuesta, id) {
 	json(respuesta, 200, { eliminado: true, fotosBorradas: borradas });
 }
 
+/** Destacados actuales y candidatos, para la pantalla de destacados. */
+async function pantallaDestacados(respuesta) {
+	const ids = await leerDestacados();
+	const { coches } = await new Promise((resolver) => {
+		listarCoches({ writeHead() {}, end: (cuerpo) => resolver(JSON.parse(cuerpo)) });
+	});
+
+	const porId = new Map(coches.map((coche) => [coche.id, coche]));
+
+	json(respuesta, 200, {
+		// El orden de la lista es el del carrusel, así que se respeta tal cual.
+		destacados: ids.map((id) => porId.get(id) ?? { id, titulo: id, referencia: '', perdido: true }),
+		candidatos: coches.filter((coche) => !ids.includes(coche.id)),
+	});
+}
+
+async function anadirDestacado(respuesta, id) {
+	const actuales = await leerDestacados();
+	if (!actuales.includes(id)) await escribirDestacados([...actuales, id]);
+
+	json(respuesta, 200, { destacado: true, id });
+}
+
 // --- Servidor --------------------------------------------------------------
 
 const servidor = createServer(async (peticion, respuesta) => {
@@ -407,6 +445,23 @@ const servidor = createServer(async (peticion, respuesta) => {
 
 		if (peticion.method === 'GET' && url.pathname === '/api/coches') {
 			return await listarCoches(respuesta);
+		}
+
+		if (peticion.method === 'GET' && url.pathname === '/api/destacados') {
+			return await pantallaDestacados(respuesta);
+		}
+
+		const deDestacado = url.pathname.match(/^\/api\/destacados\/([^/]+)$/);
+
+		if (deDestacado) {
+			const id = decodeURIComponent(deDestacado[1]);
+
+			if (peticion.method === 'POST') return await anadirDestacado(respuesta, id);
+
+			if (peticion.method === 'DELETE') {
+				await quitarDeDestacados(id);
+				return json(respuesta, 200, { quitado: true, id });
+			}
 		}
 
 		const deCoche = url.pathname.match(/^\/api\/coche\/([^/]+?)(\/vendido)?$/);

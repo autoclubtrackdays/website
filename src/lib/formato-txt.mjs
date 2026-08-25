@@ -72,7 +72,7 @@ export const CAMPOS = [
 	{ etiqueta: 'Accidentes', clave: 'accidents', tipo: 'sino' },
 	{ etiqueta: 'Libro de mantenimiento', clave: 'service_book', tipo: 'sino' },
 	{ etiqueta: 'ITV nueva', clave: 'itv', tipo: 'sino' },
-	{ etiqueta: 'No fumador', clave: 'non_smoker', tipo: 'sino' },
+	{ etiqueta: 'Fumador', clave: 'smoker', tipo: 'sino' },
 	{ etiqueta: 'Vehiculo de alquiler', clave: 'rental', tipo: 'sino' },
 	{ etiqueta: 'Garantia', clave: 'warranty', tipo: 'texto', ayuda: 'Por ejemplo: 12 meses' },
 	{ etiqueta: 'Fotos', clave: 'images', tipo: 'entero', automatico: true },

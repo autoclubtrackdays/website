@@ -48,7 +48,7 @@ const esquemaCoche = z.object({
 	accidents: z.string().optional(),
 	service_book: z.string().optional(),
 	itv: z.string().optional(),
-	non_smoker: z.string().optional(),
+	smoker: z.string().optional(),
 	rental: z.string().optional(),
 	warranty: z.string().optional(),
 });

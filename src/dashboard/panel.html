@@ -272,13 +272,13 @@
 				display: none;
 			}
 
-			#lista table {
+			.tabla {
 				width: 100%;
 				margin-top: 1rem;
 				border-collapse: collapse;
 			}
 
-			#lista th {
+			.tabla th {
 				padding: 0.5rem 0.5rem 0.5rem 0;
 				border-bottom: 1px solid var(--borde);
 				text-align: left;
@@ -288,29 +288,29 @@
 				color: var(--gris);
 			}
 
-			#lista td {
+			.tabla td {
 				padding: 0.75rem 0.5rem 0.75rem 0;
 				border-bottom: 1px solid #f3f4f6;
 				vertical-align: middle;
 			}
 
-			#lista td.ref {
+			.tabla td.ref {
 				font-variant-numeric: tabular-nums;
 				font-weight: 600;
 				white-space: nowrap;
 			}
 
-			#lista td.botones {
+			.tabla td.botones {
 				text-align: right;
 				white-space: nowrap;
 			}
 
-			#lista button {
+			.tabla button {
 				padding: 0.375rem 0.75rem;
 				font-size: 0.8125rem;
 			}
 
-			#lista tr.antigua td:not(.botones) {
+			.tabla tr.antigua td:not(.botones) {
 				color: var(--gris);
 			}
 
@@ -350,6 +350,7 @@
 			<div class="inicio" id="inicio">
 				<button class="principal" id="empezar">Añadir nuevo coche</button>
 				<button id="ver-lista">Coches en venta</button>
+				<button id="ver-destacados">Cambiar destacados</button>
 			</div>
 
 			<div class="atras oculto" id="zona-atras">
@@ -357,6 +358,7 @@
 			</div>
 
 			<section id="lista" class="oculto"></section>
+			<section id="destacados" class="oculto"></section>
 
 			<form id="formulario" class="oculto">
 				<h2>Fotos del coche</h2>
@@ -652,6 +654,7 @@
 				$('inicio').classList.toggle('oculto', pantalla !== 'inicio');
 				$('zona-atras').classList.toggle('oculto', pantalla === 'inicio');
 				$('lista').classList.toggle('oculto', pantalla !== 'lista');
+				$('destacados').classList.toggle('oculto', pantalla !== 'destacados');
 				$('formulario').classList.toggle('oculto', pantalla !== 'formulario');
 				if (pantalla !== 'formulario') $('resultado').innerHTML = '';
 			}
@@ -676,6 +679,31 @@
 
 			// --- Coches en venta ---------------------------------------------------
 
+			/** Misma tabla para todas las pantallas: mismas columnas, mismo estilo y
+			 *  los botones siempre alineados a la derecha. */
+			function tablaDeCoches(coches, botones, vacio = 'No hay ningún coche.') {
+				if (coches.length === 0) return `<p class="ayuda">${vacio}</p>`;
+
+				return `<table class="tabla">
+					<thead>
+						<tr><th>Ref.</th><th>Coche</th><th>Precio</th><th>Fotos</th><th></th></tr>
+					</thead>
+					<tbody>
+						${coches
+							.map(
+								(coche) => `<tr class="${coche.editable === false ? 'antigua' : ''}">
+									<td class="ref">${coche.referencia}</td>
+									<td>${coche.titulo}</td>
+									<td>${coche.precio ? Number(coche.precio).toLocaleString('es-ES') + ' €' : ''}</td>
+									<td>${coche.fotos ?? ''}</td>
+									<td class="botones">${botones(coche)}</td>
+								</tr>`,
+							)
+							.join('')}
+					</tbody>
+				</table>`;
+			}
+
 			async function verLista() {
 				mostrar('lista', 'Coches en venta');
 				$('lista').innerHTML = '<p class="ayuda">Cargando…</p>';
@@ -689,34 +717,67 @@
 
 				const antiguas = coches.filter((coche) => !coche.editable).length;
 
-				$('lista').innerHTML = `
-					<table>
-						<thead>
-							<tr><th>Ref.</th><th>Coche</th><th>Precio</th><th>Fotos</th><th></th></tr>
-						</thead>
-						<tbody>
-							${coches
-								.map(
-									(coche) => `<tr class="${coche.editable ? '' : 'antigua'}">
-										<td class="ref">${coche.referencia}</td>
-										<td>${coche.titulo}</td>
-										<td>${coche.precio ? Number(coche.precio).toLocaleString('es-ES') + ' €' : ''}</td>
-										<td>${coche.fotos}</td>
-										<td class="botones">
-											${coche.editable ? `<button data-editar="${coche.id}">Editar</button>` : ''}
-											<button data-vendido="${coche.id}">Marcar vendido</button>
-											<button data-eliminar="${coche.id}">Eliminar</button>
-										</td>
-									</tr>`,
-								)
-								.join('')}
-						</tbody>
-					</table>
-					${antiguas > 0 ? `<p class="ayuda">Los ${antiguas} coches en gris son del volcado antiguo: se pueden vender o borrar, pero no editar desde aquí.</p>` : ''}
-				`;
+				$('lista').innerHTML =
+					tablaDeCoches(coches, (coche) =>
+						[
+							coche.editable ? `<button data-editar="${coche.id}">Editar</button>` : '',
+							`<button data-vendido="${coche.id}">Marcar vendido</button>`,
+							`<button data-eliminar="${coche.id}">Eliminar</button>`,
+						].join(''),
+					) +
+					(antiguas > 0
+						? `<p class="ayuda">Los ${antiguas} coches en gris son del volcado antiguo: se pueden vender o borrar, pero no editar desde aquí.</p>`
+						: '');
 			}
 
 			$('ver-lista').addEventListener('click', verLista);
+
+			// --- Destacados --------------------------------------------------------
+
+
+			async function verDestacados() {
+				mostrar('destacados', 'Destacados');
+				$('destacados').innerHTML = '<p class="ayuda">Cargando…</p>';
+
+				const { destacados, candidatos } = await fetch('/api/destacados').then((r) => r.json());
+
+				$('destacados').innerHTML = `
+					<h2>En el carrusel de la portada (${destacados.length})</h2>
+					${tablaDeCoches(
+						destacados,
+						(coche) => `<button data-quitar="${coche.id}">Quitar</button>`,
+						'No hay ningún coche destacado.',
+					)}
+
+					<h2>Resto de coches en venta (${candidatos.length})</h2>
+					${tablaDeCoches(
+						candidatos,
+						(coche) => `<button data-anadir="${coche.id}">Añadir a destacados</button>`,
+						'Todos los coches en venta están ya destacados.',
+					)}
+				`;
+			}
+
+			$('ver-destacados').addEventListener('click', verDestacados);
+
+			$('destacados').addEventListener('click', async (evento) => {
+				const boton = evento.target.closest('button[data-quitar], button[data-anadir]');
+				if (!boton) return;
+
+				boton.disabled = true;
+				const { quitar, anadir } = boton.dataset;
+
+				await fetch(`/api/destacados/${encodeURIComponent(quitar ?? anadir)}`, {
+					method: quitar ? 'DELETE' : 'POST',
+				});
+
+				await verDestacados();
+				avisar(
+					'Hecho. Recuerda pulsar Publicar para que el cambio llegue a la web. <div class="acciones"><button class="principal" id="publicar">Publicar en la web</button></div>',
+					'bueno',
+				);
+				$('publicar').addEventListener('click', publicar);
+			});
 
 			$('lista').addEventListener('click', async (evento) => {
 				const boton = evento.target.closest('button[data-editar], button[data-vendido], button[data-eliminar]');
