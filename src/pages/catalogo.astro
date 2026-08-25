@@ -38,9 +38,31 @@ const filtros = [
 
 <Layout title="Catálogo – Autoclub Trackdays">
 	<section class="mx-auto max-w-6xl px-6 py-16">
-		<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
-			Catálogo
-		</h1>
+		<div class="flex flex-wrap items-baseline justify-between gap-4">
+			<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
+				Catálogo
+			</h1>
+
+			<a
+				href="/vendidos"
+				class="inline-flex items-center gap-3 border-b-2 border-(--accent) pb-1 text-xl font-semibold tracking-wide text-black uppercase transition hover:translate-x-3"
+			>
+				Ventas recientes
+				<svg
+					viewBox="0 0 20 20"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="h-5 w-5"
+					aria-hidden="true"
+				>
+					<path d="M4 10h12m0 0-4-4m4 4-4 4"></path>
+				</svg>
+			</a>
+		</div>
+
 		<span class="mt-3 block h-1 w-16 bg-(--accent)"></span>
 
 		<div class="mt-10 flex flex-col gap-4 border-y border-gray-200 py-6 lg:flex-row lg:items-center">
@@ -123,24 +145,66 @@ const filtros = [
 	const orden = desplegables.find((d) => d.dataset.campo === 'orden');
 	const filtros = desplegables.filter((d) => d.dataset.campo !== 'orden');
 
-	if (
-		rejilla instanceof HTMLElement &&
-		busqueda instanceof HTMLInputElement &&
-		orden &&
-		contador &&
-		vacio &&
-		limpiar
-	) {
+	// Solo se exige lo imprescindible. El contador, el aviso de vacío y el botón
+	// de limpiar son adorno: si se quita uno del marcado, el filtrado sigue.
+	if (rejilla instanceof HTMLElement && busqueda instanceof HTMLInputElement && orden) {
 		const tarjetas = [...rejilla.querySelectorAll<HTMLElement>('[data-coche]')];
+
+		// Solo se anima cuando el resultado cambia de verdad: si no, cada tecla
+		// pulsada relanzaría la animación de las mismas tarjetas.
+		let ultimaLista = '';
+
+		const animar = () => {
+			// En el orden del DOM, no en el del array: así reordenar también cuenta
+			// como cambio, y el escalonado sigue el orden en que se ven.
+			const visibles = [...rejilla.children].filter(
+				(tarjeta): tarjeta is HTMLElement =>
+					tarjeta instanceof HTMLElement && !tarjeta.classList.contains('hidden'),
+			);
+			const lista = visibles.map((tarjeta) => tarjetas.indexOf(tarjeta)).join(',');
+
+			if (lista === ultimaLista) return;
+			ultimaLista = lista;
+
+			visibles.forEach((tarjeta, indice) => {
+				tarjeta.classList.remove('aparece');
+				// Tope de 250ms: con 18 coches la última no puede hacerse esperar.
+				tarjeta.style.animationDelay = `${Math.min(indice * 25, 250)}ms`;
+			});
+
+			// Leer una medida fuerza el reflujo y reinicia la animación.
+			void rejilla.offsetWidth;
+
+			visibles.forEach((tarjeta) => {
+				tarjeta.classList.add('aparece');
+
+				// La clase se retira al acabar: así una reordenación posterior no
+				// encuentra ninguna animación que reiniciar.
+				tarjeta.addEventListener(
+					'animationend',
+					() => {
+						tarjeta.classList.remove('aparece');
+						tarjeta.style.animationDelay = '';
+					},
+					{ once: true },
+				);
+			});
+		};
 
 		// Ordenar mueve los nodos que ya existen: no se vuelve a pintar ninguna card.
 		const ordenar = () => {
 			const [campo, direccion] = (orden.dataset.valor ?? '').split(':');
 			const factor = direccion === 'desc' ? -1 : 1;
 
-			[...tarjetas]
-				.sort((a, b) => (Number(a.dataset[campo]) - Number(b.dataset[campo])) * factor)
-				.forEach((tarjeta) => rejilla.appendChild(tarjeta));
+			const ordenadas = [...tarjetas].sort(
+				(a, b) => (Number(a.dataset[campo]) - Number(b.dataset[campo])) * factor,
+			);
+
+			// Si ya están en ese orden no se toca el DOM: reinsertar un nodo
+			// reinicia sus animaciones CSS, y eso relanzaba la entrada en cada tecla.
+			if (ordenadas.every((tarjeta, indice) => tarjeta === rejilla.children[indice])) return;
+
+			ordenadas.forEach((tarjeta) => rejilla.appendChild(tarjeta));
 		};
 
 		const aplicar = () => {
@@ -158,12 +222,19 @@ const filtros = [
 				if (coincide) visibles++;
 			});
 
-			contador.textContent =
-				visibles === 1 ? '1 unidad disponible' : `${visibles} unidades disponibles`;
-			vacio.hidden = visibles > 0;
-			limpiar.hidden = !texto && activos.length === 0 && orden.dataset.valor === ordenPorDefecto;
+			if (contador) {
+				contador.textContent =
+					visibles === 1 ? '1 unidad disponible' : `${visibles} unidades disponibles`;
+			}
+
+			if (vacio) vacio.hidden = visibles > 0;
+
+			if (limpiar) {
+				limpiar.hidden = !texto && activos.length === 0 && orden.dataset.valor === ordenPorDefecto;
+			}
 
 			ordenar();
+			animar();
 		};
 
 		const ordenPorDefecto =
@@ -217,7 +288,7 @@ const filtros = [
 
 		desplegables.forEach((desplegable) => desplegable.addEventListener('cambio', alCambiar));
 
-		limpiar.addEventListener('click', () => {
+		limpiar?.addEventListener('click', () => {
 			busqueda.value = '';
 			filtros.forEach((filtro) =>
 				filtro.dispatchEvent(new CustomEvent('establecer', { detail: '' })),

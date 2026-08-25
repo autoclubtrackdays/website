@@ -192,10 +192,10 @@ const marcas = [...new Set(coches.map((coche) => coche.data.make))].sort();
 			</h2>
 			<span data-revelar class="mt-3 block h-1 w-16 bg-(--accent)"></span>
 
-			<div class="mx-auto mt-14 grid w-[90%] gap-14 lg:grid-cols-2">
+			<div class="mx-auto mt-14 w-[95%] grid gap-14 lg:grid-cols-2">
 				<div data-revelar class="flex flex-col gap-10">
 					<div>
-						<p class="text-sm tracking-wide text-gray-500 uppercase">Llámanos</p>
+						<p class="text-sm text-gray-500 uppercase">Llámanos</p>
 						<a
 							href={`tel:${CONTACTO.telefono.tel}`}
 							class="mt-2 inline-block text-5xl font-semibold tracking-tighter text-gray-900 decoration-(--accent) decoration-4 underline-offset-8 transition hover:underline sm:text-6xl"
@@ -222,26 +222,6 @@ const marcas = [...new Set(coches.map((coche) => coche.data.make))].sort();
 						<div>
 							<p class="text-sm tracking-wide text-gray-500 uppercase">Dónde estamos</p>
 							<p class="mt-3 text-gray-900">{CONTACTO.direccion}</p>
-							<a
-								href={MAPA_ENLACE}
-								target="_blank"
-								rel="noopener"
-								class="mt-4 inline-flex items-center gap-2 border-b-2 border-(--accent) pb-1 text-sm font-semibold tracking-wide text-black uppercase transition hover:translate-x-3"
-							>
-								Cómo llegar
-								<svg
-									viewBox="0 0 20 20"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									class="h-4 w-4"
-									aria-hidden="true"
-								>
-									<path d="M4 10h12m0 0-4-4m4 4-4 4" />
-								</svg>
-							</a>
 						</div>
 
 						<div>
