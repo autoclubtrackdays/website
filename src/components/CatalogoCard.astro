@@ -19,7 +19,7 @@ interface Props {
 const { coche } = Astro.props;
 const { data } = coche;
 
-const { contado, financiado } = precios(data, coche.body);
+const { contado, financiado } = precios(data);
 
 // Una fila por pareja: el primer dato va a la izquierda y el segundo a la derecha.
 const especificaciones = [

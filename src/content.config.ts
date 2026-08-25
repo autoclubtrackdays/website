@@ -17,6 +17,7 @@ const esquemaCoche = z.object({
 	model: z.coerce.string().optional(),
 	variant: z.coerce.string(),
 	price_eur: z.number(),
+	price_financed_eur: z.number().optional(),
 	price_formatted: z.string().optional(),
 	mileage_km: z.number(),
 	/** MM/AAAA. */
@@ -44,6 +45,7 @@ const esquemaCoche = z.object({
 	drivetrain: z.string().optional(),
 	paint: z.string().optional(),
 	consumption: z.string().optional(),
+	environmental_label: z.string().optional(),
 	accidents: z.string().optional(),
 	service_book: z.string().optional(),
 	itv: z.string().optional(),

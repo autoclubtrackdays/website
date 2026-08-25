@@ -17,7 +17,7 @@ interface Props {
 const { coche } = Astro.props;
 const { data } = coche;
 
-const { contado } = precios(data, coche.body);
+const { contado } = precios(data);
 ---
 
 <a

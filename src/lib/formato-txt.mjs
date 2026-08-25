@@ -18,6 +18,13 @@ export const CAMPOS = [
 	{ etiqueta: 'Modelo', clave: 'model', tipo: 'texto' },
 	{ etiqueta: 'Version', clave: 'variant', tipo: 'texto', obligatorio: true },
 	{ etiqueta: 'Precio', clave: 'price_eur', tipo: 'entero', obligatorio: true, sufijo: '€' },
+	{
+		etiqueta: 'Precio financiado',
+		clave: 'price_financed_eur',
+		tipo: 'entero',
+		sufijo: '€',
+		ayuda: 'Déjalo vacío si no ofreces financiación para este coche',
+	},
 	{ etiqueta: 'Kilometros', clave: 'mileage_km', tipo: 'entero', obligatorio: true, sufijo: 'km' },
 	{ etiqueta: 'Fecha', clave: 'first_registration', tipo: 'fecha', obligatorio: true },
 	{
@@ -26,6 +33,12 @@ export const CAMPOS = [
 		tipo: 'opciones',
 		obligatorio: true,
 		opciones: ['Gasolina', 'Diésel', 'Híbrido', 'Híbrido enchufable', 'Eléctrico', 'GLP', 'GNC'],
+	},
+	{
+		etiqueta: 'Etiqueta medioambiental',
+		clave: 'environmental_label',
+		tipo: 'opciones',
+		opciones: ['Cero Emisiones (0)', 'ECO', 'C', 'B', 'Histórico', 'Sin distintivo'],
 	},
 	{
 		etiqueta: 'Cambio',

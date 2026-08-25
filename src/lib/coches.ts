@@ -67,17 +67,14 @@ export function potenciaTexto(data: Datos): string | null {
 export const cambioTexto = (transmission: string) =>
 	transmission.charAt(0).toUpperCase() + transmission.slice(1).toLowerCase();
 
-/** OJO: `price_eur` no es el precio al contado. En los coches que lo declaran,
- *  el cuerpo del anuncio da uno 100 € mayor. Se devuelven los dos para que cada
- *  cifra salga con la etiqueta que le corresponde. */
-export function precios(data: Datos, body?: string) {
-	const encontrado = body?.match(/Precio al contado[^\d]*(\d[\d.]*)/);
-	const contado = encontrado ? Number(encontrado[1].replace(/\./g, '')) : null;
+/** Los dos precios del coche. El financiado es opcional: si no está, o si
+ *  coincide con el de contado, no se pinta y la tarjeta enseña una sola cifra. */
+export function precios(data: Datos) {
+	const financiado = data.price_financed_eur ?? null;
 
 	return {
-		contado: contado ?? data.price_eur,
-		/** Solo cuando de verdad difiere del de contado. */
-		financiado: contado && contado !== data.price_eur ? data.price_eur : null,
+		contado: data.price_eur,
+		financiado: financiado && financiado !== data.price_eur ? financiado : null,
 	};
 }
 

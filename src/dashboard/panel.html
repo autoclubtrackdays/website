@@ -367,8 +367,16 @@
 
 				<div id="zona">
 					<p>Arrastra aquí la carpeta con las fotos</p>
-					<button type="button" id="examinar">Elegir carpeta</button>
-					<input type="file" id="archivos" webkitdirectory multiple accept="image/*" hidden />
+					<div class="acciones" style="justify-content: center">
+						<button type="button" id="examinar-carpeta">Elegir carpeta</button>
+						<button type="button" id="examinar-fotos">Elegir fotos sueltas</button>
+					</div>
+
+					<!-- Sin `accept`: al seleccionar carpeta, el diálogo filtra por tipo
+					     de archivo y esconde los directorios, así que no se puede
+					     navegar. Las imágenes ya se filtran después, en el script. -->
+					<input type="file" id="carpeta" webkitdirectory multiple hidden />
+					<input type="file" id="fotos-sueltas" multiple accept="image/*" hidden />
 				</div>
 
 				<div id="miniaturas"></div>
@@ -460,6 +468,11 @@
 			const esImagen = (archivo) => archivo.type.startsWith('image/');
 
 			function pintarMiniaturas() {
+				$('zona').querySelector('p').textContent =
+					fotos.length > 0
+						? `${fotos.length} foto${fotos.length === 1 ? '' : 's'} seleccionada${fotos.length === 1 ? '' : 's'}. La primera es la de portada.`
+						: 'Arrastra aquí la carpeta con las fotos';
+
 				$('miniaturas').innerHTML = fotos
 					.map(
 						(foto, indice) =>
@@ -487,8 +500,12 @@
 				return listas.flat();
 			}
 
-			$('examinar').addEventListener('click', () => $('archivos').click());
-			$('archivos').addEventListener('change', (e) => aceptarArchivos(e.target.files));
+			$('examinar-carpeta').addEventListener('click', () => $('carpeta').click());
+			$('examinar-fotos').addEventListener('click', () => $('fotos-sueltas').click());
+
+			for (const id of ['carpeta', 'fotos-sueltas']) {
+				$(id).addEventListener('change', (evento) => aceptarArchivos(evento.target.files));
+			}
 
 			['dragenter', 'dragover'].forEach((evento) =>
 				$('zona').addEventListener(evento, (e) => {

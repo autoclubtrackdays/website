@@ -45,7 +45,7 @@ const { coche, vendido } = Astro.props;
 const { data } = coche;
 
 const galeria = fotos(coche);
-const { contado, financiado } = precios(data, coche.body);
+const { contado, financiado } = precios(data);
 const nombre = nombreCorto(data);
 
 // Resumen de cabecera: lo que se mira antes de bajar a la ficha completa.
@@ -78,6 +78,7 @@ const bloques = [
 			fila('Potencia', potenciaTexto(data)),
 			fila('Cilindrada', data.displacement_cc && `${data.displacement_cc} cm³`),
 			fila('Combustible', data.fuel),
+			fila('Etiqueta medioambiental', data.environmental_label),
 			fila('Cambio', cambioTexto(data.transmission)),
 			fila('Tracción', data.drivetrain),
 			fila('Puertas', data.doors),
