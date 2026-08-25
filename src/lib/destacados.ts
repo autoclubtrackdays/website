@@ -3,6 +3,4 @@
  *  Se gestiona desde el panel, en «Cambiar destacados». Añadir o quitar a mano
  *  también vale: es el id de la entrada, o sea el nombre de su .txt sin la
  *  extensión. Un id que no exista rompe el build, así que las erratas se ven. */
-export const DESTACADOS: string[] = [
-	'seat-leon-cupra-r-300-606977',
-];
+export const DESTACADOS: string[] = [];
