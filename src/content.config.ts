@@ -1,5 +1,9 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
+import type { Loader, LoaderContext } from 'astro/loaders';
+import { readdir, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { componerTitulo, parsearTxt } from './lib/formato-txt.mjs';
 
 // Claves tal y como las escupe el origen de datos: no se renombran aquí para
 // que volver a importar el stock no obligue a tocar el esquema.
@@ -26,27 +30,92 @@ const esquemaCoche = z.object({
 	power_hp: z.number().optional(),
 	body_type: z.string().optional(),
 	color: z.string().optional(),
-	doors: z.number().optional(),
+	/** Coerce: en el .txt viene de un desplegable, o sea como texto. */
+	doors: z.coerce.number().optional(),
 	condition: z.string().optional(),
 	reference: z.union([z.string(), z.number()]).optional(),
 	listing_id: z.string().optional(),
 	images: z.number().optional(),
 	source_url: z.string().optional(),
+
+	// Campos que en el volcado antiguo vivían dentro de las tablas del cuerpo y
+	// que el formulario del panel sí rellena como campos.
+	displacement_cc: z.number().optional(),
+	seats: z.coerce.number().optional(),
+	drivetrain: z.string().optional(),
+	paint: z.string().optional(),
+	consumption: z.string().optional(),
+	accidents: z.string().optional(),
+	service_book: z.string().optional(),
+	itv: z.string().optional(),
+	non_smoker: z.string().optional(),
+	rental: z.string().optional(),
+	warranty: z.string().optional(),
 });
 
-// Cada coche es una carpeta con su .md y su media/. El id es la carpeta, no la
-// ruta del archivo, para no arrastrar el nombre repetido.
+// Cada coche antiguo es una carpeta con su .md; el id es la carpeta, no la ruta
+// del archivo, para no arrastrar el nombre repetido.
 const rutaComoId = ({ entry }: { entry: string }) => entry.split('/')[0];
 
+/**
+ * Lee las entradas en .txt y las añade al store.
+ *
+ * Astro trae lectores para .md, .json y .yaml, pero no para .txt, así que hay
+ * que ponerlo a mano. El id es el nombre del archivo sin extensión.
+ */
+async function cargarTxt(carpeta: string, contexto: LoaderContext) {
+	const { store, parseData, generateDigest, logger } = contexto;
+
+	let archivos: string[] = [];
+	try {
+		archivos = (await readdir(carpeta)).filter((nombre) => nombre.endsWith('.txt'));
+	} catch {
+		return; // La carpeta puede no existir todavía.
+	}
+
+	for (const archivo of archivos) {
+		const ruta = join(carpeta, archivo);
+		const { datos, comentario } = parsearTxt(await readFile(ruta, 'utf8'));
+
+		const id = archivo.replace(/\.txt$/, '');
+		const crudo = { ...datos, title: datos.title ?? componerTitulo(datos) };
+
+		try {
+			const data = await parseData({ id, data: crudo, filePath: ruta });
+			store.set({ id, data, body: comentario, filePath: ruta, digest: generateDigest(crudo) });
+		} catch (error) {
+			logger.error(`No se pudo leer ${ruta}: ${(error as Error).message}`);
+		}
+	}
+}
+
+/**
+ * Combina el lector de siempre con el de .txt.
+ *
+ * El de Astro borra del store todo lo que no ha tocado, así que tiene que ir
+ * primero: si fuera al revés se llevaría por delante las entradas en .txt.
+ */
+function lectorCoches(carpeta: string): Loader {
+	const antiguo = glob({ base: carpeta, pattern: '**/*.md', generateId: rutaComoId });
+
+	return {
+		name: 'coches',
+		load: async (contexto) => {
+			await antiguo.load(contexto);
+			await cargarTxt(carpeta, contexto);
+		},
+	};
+}
+
 const coches = defineCollection({
-	loader: glob({ base: './src/content/coches', pattern: '**/*.md', generateId: rutaComoId }),
+	loader: lectorCoches('./src/content/coches'),
 	schema: esquemaCoche,
 });
 
-/** Un coche vendido es el mismo .md movido a src/content/vendidos/. Su ficha
+/** Un coche vendido es la misma entrada movida a src/content/vendidos/. Su ficha
  *  sigue publicándose con el distintivo de vendido, pero sale del catálogo. */
 const vendidos = defineCollection({
-	loader: glob({ base: './src/content/vendidos', pattern: '**/*.md', generateId: rutaComoId }),
+	loader: lectorCoches('./src/content/vendidos'),
 	schema: esquemaCoche,
 });
 

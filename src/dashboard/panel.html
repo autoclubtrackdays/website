@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Panel · Autoclub Trackdays</title>
+		<style>
+			:root {
+				--amarillo: #ffea00;
+				--borde: #e5e7eb;
+				--gris: #6b7280;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			body {
+				margin: 0;
+				padding: 0 0 6rem;
+				font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+				color: #111827;
+				background: #fff;
+			}
+
+			header {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 1rem;
+				padding: 1rem 2rem;
+				background: #000;
+				color: #fff;
+			}
+
+			header strong {
+				font-size: 1.25rem;
+				letter-spacing: 0.02em;
+				text-transform: uppercase;
+			}
+
+			main {
+				max-width: 56rem;
+				margin: 0 auto;
+				padding: 0 1.5rem;
+			}
+
+			h1 {
+				margin: 3rem 0 0;
+				font-size: 2rem;
+				text-transform: uppercase;
+				letter-spacing: -0.02em;
+			}
+
+			h1 + .barra {
+				display: block;
+				width: 4rem;
+				height: 4px;
+				margin-top: 0.75rem;
+				background: var(--amarillo);
+			}
+
+			h2 {
+				margin: 2.5rem 0 0;
+				font-size: 0.8125rem;
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				color: var(--gris);
+			}
+
+			button {
+				padding: 0.625rem 1.25rem;
+				border: 1px solid var(--borde);
+				border-radius: 2px;
+				background: #fff;
+				font: inherit;
+				font-weight: 600;
+				cursor: pointer;
+			}
+
+			button:hover:not(:disabled) {
+				border-color: #111827;
+			}
+
+			button.principal {
+				border-color: var(--amarillo);
+				background: var(--amarillo);
+			}
+
+			button.principal:hover:not(:disabled) {
+				background: #e6d200;
+				border-color: #e6d200;
+			}
+
+			button.fantasma {
+				border-color: #4b5563;
+				background: transparent;
+				color: #fff;
+			}
+
+			button:disabled {
+				opacity: 0.4;
+				cursor: not-allowed;
+			}
+
+			#zona {
+				margin-top: 1rem;
+				padding: 2.5rem 1.5rem;
+				border: 2px dashed var(--borde);
+				border-radius: 2px;
+				text-align: center;
+				color: var(--gris);
+			}
+
+			#zona.encima {
+				border-color: var(--amarillo);
+				background: #fffbe6;
+			}
+
+			#miniaturas {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				margin-top: 1rem;
+			}
+
+			#miniaturas figure {
+				position: relative;
+				width: 6rem;
+				margin: 0;
+			}
+
+			#miniaturas img {
+				display: block;
+				width: 100%;
+				aspect-ratio: 4 / 3;
+				object-fit: cover;
+				border: 1px solid var(--borde);
+			}
+
+			#miniaturas figcaption {
+				position: absolute;
+				top: 0;
+				left: 0;
+				padding: 0.125rem 0.375rem;
+				background: #000;
+				color: #fff;
+				font-size: 0.6875rem;
+				font-variant-numeric: tabular-nums;
+			}
+
+			.campos {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+				gap: 1rem 1.5rem;
+				margin-top: 1rem;
+			}
+
+			label {
+				display: block;
+				font-size: 0.8125rem;
+				font-weight: 600;
+			}
+
+			label .opcional {
+				font-weight: 400;
+				color: var(--gris);
+			}
+
+			input,
+			select,
+			textarea {
+				width: 100%;
+				margin-top: 0.25rem;
+				padding: 0.5rem 0.625rem;
+				border: 1px solid var(--borde);
+				border-radius: 2px;
+				font: inherit;
+				background: #fff;
+			}
+
+			input:focus,
+			select:focus,
+			textarea:focus {
+				outline: none;
+				border-color: #111827;
+			}
+
+			input:invalid:not(:placeholder-shown) {
+				border-color: #dc2626;
+			}
+
+			.ayuda {
+				margin-top: 0.25rem;
+				font-size: 0.75rem;
+				color: var(--gris);
+			}
+
+			.fecha {
+				display: flex;
+				gap: 0.5rem;
+			}
+
+			textarea {
+				min-height: 8rem;
+				resize: vertical;
+			}
+
+			.acciones {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.75rem;
+				align-items: center;
+				margin-top: 2rem;
+			}
+
+			.aviso {
+				margin-top: 1rem;
+				padding: 1rem;
+				border-left: 4px solid var(--amarillo);
+				background: #fffbe6;
+				font-size: 0.9375rem;
+			}
+
+			.aviso.malo {
+				border-left-color: #dc2626;
+				background: #fef2f2;
+			}
+
+			.aviso.bueno {
+				border-left-color: #16a34a;
+				background: #f0fdf4;
+			}
+
+			dialog {
+				max-width: 34rem;
+				border: 1px solid var(--borde);
+				border-radius: 2px;
+				padding: 2rem;
+			}
+
+			dialog::backdrop {
+				background: rgb(0 0 0 / 0.6);
+			}
+
+			dialog dl {
+				max-height: 50vh;
+				overflow: auto;
+				margin: 1rem 0 0;
+				font-size: 0.9375rem;
+			}
+
+			dialog dl div {
+				display: flex;
+				justify-content: space-between;
+				gap: 1rem;
+				padding: 0.375rem 0;
+				border-bottom: 1px solid #f3f4f6;
+			}
+
+			dialog dt {
+				color: var(--gris);
+			}
+
+			dialog dd {
+				margin: 0;
+				font-weight: 600;
+				text-align: right;
+			}
+
+			.oculto {
+				display: none;
+			}
+		</style>
+	</head>
+
+	<body>
+		<header>
+			<strong>Autoclub Trackdays</strong>
+			<button class="fantasma" id="cerrar">Cerrar panel</button>
+		</header>
+
+		<main>
+			<h1>Nuevo coche</h1>
+			<span class="barra"></span>
+
+			<div id="aviso-r2" class="aviso malo oculto">
+				R2 no está configurado, así que las fotos no se podrán subir. Revisa el archivo
+				<code>.env</code>.
+			</div>
+
+			<div class="acciones">
+				<button class="principal" id="empezar">Añadir nuevo coche</button>
+			</div>
+
+			<form id="formulario" class="oculto">
+				<h2>Fotos del coche</h2>
+
+				<div id="zona">
+					<p>Arrastra aquí la carpeta con las fotos</p>
+					<button type="button" id="examinar">Elegir carpeta</button>
+					<input type="file" id="archivos" webkitdirectory multiple accept="image/*" hidden />
+				</div>
+
+				<div id="miniaturas"></div>
+
+				<h2>Datos del coche</h2>
+				<div class="campos" id="campos"></div>
+
+				<h2>Comentario</h2>
+				<textarea
+					id="comentario"
+					placeholder="Lo que quieras contar del coche. Se publica tal cual, en la ficha."
+				></textarea>
+
+				<div class="acciones">
+					<button class="principal" type="submit">Añadir</button>
+					<button type="button" id="cancelar">Cancelar</button>
+				</div>
+			</form>
+
+			<div id="resultado"></div>
+		</main>
+
+		<dialog id="confirmacion">
+			<strong>¿Damos de alta este coche?</strong>
+			<dl id="resumen"></dl>
+			<div class="acciones">
+				<button class="principal" id="confirmar">Sí, añadir</button>
+				<button id="volver">Volver</button>
+			</div>
+		</dialog>
+
+		<script type="module">
+			const $ = (id) => document.getElementById(id);
+			const MESES = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+
+			let campos = [];
+			let fotos = [];
+
+			// --- Formulario, dibujado desde la misma lista que parsea los .txt ----
+
+			function pintarCampos() {
+				$('campos').innerHTML = campos
+					.filter((campo) => !campo.automatico)
+					.map((campo) => {
+						const obligatorio = campo.obligatorio ? 'required' : '';
+						const marca = campo.obligatorio ? '' : ' <span class="opcional">(opcional)</span>';
+						const ayuda = campo.ayuda ? `<p class="ayuda">${campo.ayuda}</p>` : '';
+						const sufijo = campo.sufijo ? ` <span class="opcional">(${campo.sufijo})</span>` : '';
+
+						let control;
+
+						if (campo.tipo === 'entero') {
+							control = `<input type="number" step="1" min="0" name="${campo.clave}" ${obligatorio} placeholder=" " />`;
+						} else if (campo.tipo === 'opciones' || campo.tipo === 'sino') {
+							const opciones = campo.tipo === 'sino' ? ['Sí', 'No'] : campo.opciones;
+							control = `<select name="${campo.clave}" ${obligatorio}>
+								<option value="">—</option>
+								${opciones.map((o) => `<option>${o}</option>`).join('')}
+							</select>`;
+						} else if (campo.tipo === 'fecha') {
+							const anio = new Date().getFullYear();
+							control = `<div class="fecha">
+								<select name="mes" ${obligatorio}>
+									<option value="">Mes</option>
+									${MESES.map((m) => `<option>${m}</option>`).join('')}
+								</select>
+								<input type="number" name="anio" min="1950" max="${anio + 1}" step="1" placeholder="Año" ${obligatorio} />
+							</div>`;
+						} else {
+							control = `<input type="text" name="${campo.clave}" ${obligatorio} placeholder=" " />`;
+						}
+
+						return `<div><label>${campo.etiqueta}${sufijo}${marca}${control}</label>${ayuda}</div>`;
+					})
+					.join('');
+			}
+
+			// --- Fotos -----------------------------------------------------------
+
+			const esImagen = (archivo) => archivo.type.startsWith('image/');
+
+			function pintarMiniaturas() {
+				$('miniaturas').innerHTML = fotos
+					.map(
+						(foto, indice) =>
+							`<figure><img src="${URL.createObjectURL(foto)}" alt="" /><figcaption>${indice + 1}</figcaption></figure>`,
+					)
+					.join('');
+			}
+
+			function aceptarArchivos(lista) {
+				// Por nombre: es el orden en que salieron de la cámara y el que
+				// decide cuál es la foto de portada.
+				fotos = [...lista].filter(esImagen).sort((a, b) => a.name.localeCompare(b.name));
+				pintarMiniaturas();
+			}
+
+			/** Recorre una carpeta arrastrada, que llega como árbol y no como lista. */
+			async function archivosDeEntrada(entrada) {
+				if (entrada.isFile) {
+					return [await new Promise((r) => entrada.file(r))];
+				}
+
+				const lector = entrada.createReader();
+				const hijos = await new Promise((r) => lector.readEntries(r));
+				const listas = await Promise.all(hijos.map(archivosDeEntrada));
+				return listas.flat();
+			}
+
+			$('examinar').addEventListener('click', () => $('archivos').click());
+			$('archivos').addEventListener('change', (e) => aceptarArchivos(e.target.files));
+
+			['dragenter', 'dragover'].forEach((evento) =>
+				$('zona').addEventListener(evento, (e) => {
+					e.preventDefault();
+					$('zona').classList.add('encima');
+				}),
+			);
+
+			['dragleave', 'drop'].forEach((evento) =>
+				$('zona').addEventListener(evento, () => $('zona').classList.remove('encima')),
+			);
+
+			$('zona').addEventListener('drop', async (e) => {
+				e.preventDefault();
+
+				const entradas = [...e.dataTransfer.items]
+					.map((item) => item.webkitGetAsEntry?.())
+					.filter(Boolean);
+
+				const listas = await Promise.all(entradas.map(archivosDeEntrada));
+				aceptarArchivos(listas.flat());
+			});
+
+			// --- Alta -------------------------------------------------------------
+
+			function recogerDatos() {
+				const formulario = new FormData($('formulario'));
+				const datos = {};
+
+				for (const campo of campos) {
+					if (campo.automatico) continue;
+
+					if (campo.tipo === 'fecha') {
+						const mes = formulario.get('mes');
+						const anio = formulario.get('anio');
+						if (mes && anio) datos[campo.clave] = `${mes}/${anio}`;
+						continue;
+					}
+
+					const valor = formulario.get(campo.clave);
+					if (valor) datos[campo.clave] = campo.tipo === 'entero' ? Number(valor) : valor;
+				}
+
+				if (fotos.length > 0) datos.images = fotos.length;
+				return datos;
+			}
+
+			const etiquetaDe = (clave) => campos.find((c) => c.clave === clave)?.etiqueta ?? clave;
+
+			$('formulario').addEventListener('submit', (e) => {
+				e.preventDefault();
+
+				const datos = recogerDatos();
+
+				$('resumen').innerHTML = [
+					...Object.entries(datos).map(
+						([clave, valor]) =>
+							`<div><dt>${etiquetaDe(clave)}</dt><dd>${valor}</dd></div>`,
+					),
+					`<div><dt>Fotos</dt><dd>${fotos.length}</dd></div>`,
+				].join('');
+
+				$('confirmacion').showModal();
+			});
+
+			$('volver').addEventListener('click', () => $('confirmacion').close());
+
+			const avisar = (texto, clase = '') =>
+				($('resultado').innerHTML = `<div class="aviso ${clase}">${texto}</div>`);
+
+			$('confirmar').addEventListener('click', async () => {
+				$('confirmacion').close();
+				$('confirmar').disabled = true;
+
+				try {
+					avisar('Creando la ficha…');
+
+					const alta = await fetch('/api/coche', {
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({ datos: recogerDatos(), comentario: $('comentario').value }),
+					}).then((r) => r.json());
+
+					if (alta.error) throw new Error(alta.error);
+
+					for (const [indice, foto] of fotos.entries()) {
+						avisar(`Subiendo fotos… ${indice + 1} de ${fotos.length}`);
+
+						const subida = await fetch(
+							`/api/fotos?referencia=${alta.referencia}&indice=${indice + 1}`,
+							{ method: 'POST', body: foto },
+						).then((r) => r.json());
+
+						if (subida.error) throw new Error(`Foto ${indice + 1}: ${subida.error}`);
+					}
+
+					avisar(
+						`Coche creado con la referencia <strong>${alta.referencia}</strong> y ${fotos.length} fotos subidas.
+						 <div class="acciones"><button class="principal" id="publicar">Publicar en la web</button></div>`,
+						'bueno',
+					);
+
+					$('publicar').addEventListener('click', publicar);
+					$('formulario').classList.add('oculto');
+					$('empezar').classList.remove('oculto');
+				} catch (error) {
+					avisar(`No se pudo completar: ${error.message}`, 'malo');
+				} finally {
+					$('confirmar').disabled = false;
+				}
+			});
+
+			async function publicar(evento) {
+				evento.target.disabled = true;
+				avisar('Publicando…');
+
+				const resultado = await fetch('/api/publicar', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({ mensaje: 'Nuevo coche desde el panel' }),
+				}).then((r) => r.json());
+
+				if (resultado.error) return avisar(`No se pudo publicar: ${resultado.error}`, 'malo');
+
+				avisar(
+					resultado.publicado
+						? 'Publicado. En unos minutos estará visible en la web.'
+						: resultado.detalle,
+					'bueno',
+				);
+			}
+
+			// --- Arranque y cierre -------------------------------------------------
+
+			$('empezar').addEventListener('click', () => {
+				$('formulario').classList.remove('oculto');
+				$('empezar').classList.add('oculto');
+				$('resultado').innerHTML = '';
+			});
+
+			$('cancelar').addEventListener('click', () => {
+				$('formulario').reset();
+				$('formulario').classList.add('oculto');
+				$('empezar').classList.remove('oculto');
+				fotos = [];
+				pintarMiniaturas();
+			});
+
+			$('cerrar').addEventListener('click', async () => {
+				await fetch('/api/apagar', { method: 'POST' }).catch(() => {});
+				document.body.innerHTML =
+					'<main><h1>Panel cerrado</h1><p>Ya puedes cerrar esta pestaña.</p></main>';
+			});
+
+			const inicio = await fetch('/api/campos').then((r) => r.json());
+			campos = inicio.campos;
+			if (!inicio.r2) $('aviso-r2').classList.remove('oculto');
+			pintarCampos();
+		</script>
+	</body>
+</html>

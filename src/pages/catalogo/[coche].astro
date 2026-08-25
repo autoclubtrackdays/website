@@ -59,35 +59,80 @@ const resumen = [
 	{ campo: 'Color', valor: data.color },
 ].filter((dato): dato is { campo: string; valor: string } => Boolean(dato.valor));
 
-const todas = secciones(coche.body);
+// Las entradas nuevas (.txt) traen cada dato en su campo y el cuerpo es solo el
+// comentario. Las del volcado antiguo (.md) llevan los datos en tablas dentro
+// del cuerpo, así que hay que seguir parseándolas mientras existan: cuando no
+// quede ninguna, sobra `secciones()` y con ella src/lib/ficha.ts.
+const delVolcado = secciones(coche.body);
 
-// Lista blanca, no negra: cada anuncio trae las secciones que le da la gana
-// (hay uno que convierte su titular en un ## con los extras debajo), así que
-// solo se pintan como tabla las tres que se sabe que lo son.
-const TABLAS = ['Ficha técnica', 'Dimensiones y pesos', 'Estado e historial'];
+const fila = (campo: string, valor: unknown) => ({ campo, valor: String(valor ?? '') });
 
-// Ni se pintan ni pasan a comentarios: datos del propio concesionario, la nota
-// del volcado, el consumo y el equipamiento, que se quitaron a propósito.
-const DESCARTADAS = ['Vendedor', 'Imágenes', 'Consumo y emisiones', 'Equipamiento'];
+const conValor = (filas: { campo: string; valor: string }[]) =>
+	filas.filter((fila) => fila.valor !== '' && fila.valor !== 'undefined');
 
-const bloques = todas
-	.filter((seccion) => TABLAS.includes(seccion.titulo))
-	.map((seccion) => {
-		if (seccion.titulo !== 'Ficha técnica') return seccion;
+/** Ficha y estado a partir de los campos, para las entradas nuevas. */
+function bloquesDesdeCampos() {
+	const ficha = conValor([
+		fila('Marca', data.make),
+		fila('Modelo', data.model),
+		fila('Versión', data.variant),
+		fila('Tipo de vehículo', data.body_type),
+		fila('Kilometraje', kmTexto(data.mileage_km)),
+		fila('Fecha', data.first_registration),
+		fila('Potencia', potenciaTexto(data)),
+		fila('Cilindrada', data.displacement_cc && `${data.displacement_cc} cm³`),
+		fila('Combustible', data.fuel),
+		fila('Cambio', cambioTexto(data.transmission)),
+		fila('Tracción', data.drivetrain),
+		fila('Puertas', data.doors),
+		fila('Plazas', data.seats),
+		fila('Color exterior', data.color),
+		fila('Tipo de pintura', data.paint),
+		fila('Consumo', data.consumption),
+	]);
 
-		const kw = seccion.filas.find((fila) => fila.campo === 'Potencia (kW)')?.valor;
+	const estado = conValor([
+		fila('Ha tenido accidentes', data.accidents),
+		fila('Libro de mantenimiento completo', data.service_book),
+		fila('ITV nueva', data.itv),
+		fila('No fumador', data.non_smoker),
+		fila('Vehículo de alquiler', data.rental),
+		fila('Garantía', data.warranty),
+	]);
 
-		return {
-			...seccion,
-			filas: seccion.filas
-				.filter((fila) => !['Estado', 'Potencia (kW)'].includes(fila.campo))
-				.map((fila) => {
-					if (fila.campo === 'Primera matriculación') return { ...fila, campo: 'Fecha' };
-					if (fila.campo === 'Potencia' && kw) return { ...fila, valor: `${fila.valor} (${kw})` };
-					return fila;
-				}),
-		};
-	});
+	return [
+		{ titulo: 'Ficha técnica', filas: ficha, grupos: [], parrafos: [] },
+		{ titulo: 'Estado e historial', filas: estado, grupos: [], parrafos: [] },
+	].filter((seccion) => seccion.filas.length > 0);
+}
+
+/** Tablas rescatadas del markdown, para las entradas del volcado antiguo. */
+function bloquesDelVolcado() {
+	// Lista blanca, no negra: cada anuncio traía las secciones que le daba la
+	// gana (hay uno que convierte su titular en un ## con los extras debajo).
+	const TABLAS = ['Ficha técnica', 'Dimensiones y pesos', 'Estado e historial'];
+
+	return delVolcado
+		.filter((seccion) => TABLAS.includes(seccion.titulo))
+		.map((seccion) => {
+			if (seccion.titulo !== 'Ficha técnica') return seccion;
+
+			const kw = seccion.filas.find((fila) => fila.campo === 'Potencia (kW)')?.valor;
+
+			return {
+				...seccion,
+				filas: seccion.filas
+					.filter((fila) => !['Estado', 'Potencia (kW)'].includes(fila.campo))
+					.map((fila) => {
+						if (fila.campo === 'Primera matriculación') return { ...fila, campo: 'Fecha' };
+						if (fila.campo === 'Potencia' && kw) return { ...fila, valor: `${fila.valor} (${kw})` };
+						return fila;
+					}),
+			};
+		});
+}
+
+const bloques = delVolcado.length > 0 ? bloquesDelVolcado() : bloquesDesdeCampos();
 
 // Se descarta lo que repite el precio o la coletilla de la financiación, y los
 // títulos sueltos, que se reconocen por ser demasiado cortos para ser una frase.
@@ -104,15 +149,27 @@ const comoTexto = (items: string[]) =>
 		.filter(Boolean)
 		.join('. ') + '.';
 
-// Todo lo que no es tabla ni está descartado acaba en comentarios, como texto.
-const comentarios = todas
-	.filter(
-		(seccion) => !TABLAS.includes(seccion.titulo) && !DESCARTADAS.includes(seccion.titulo),
-	)
-	.flatMap((seccion) => [
-		...seccion.parrafos.filter((parrafo) => !esRuido(parrafo)),
-		...seccion.grupos.filter((grupo) => grupo.items.length > 0).map((grupo) => comoTexto(grupo.items)),
-	]);
+const DESCARTADAS = ['Vendedor', 'Imágenes', 'Consumo y emisiones', 'Equipamiento'];
+const TABLAS = ['Ficha técnica', 'Dimensiones y pesos', 'Estado e historial'];
+
+// En las entradas nuevas el cuerpo entero es el comentario; en las antiguas hay
+// que rescatarlo de las secciones que no son tabla.
+const comentarios =
+	delVolcado.length > 0
+		? delVolcado
+				.filter(
+					(seccion) => !TABLAS.includes(seccion.titulo) && !DESCARTADAS.includes(seccion.titulo),
+				)
+				.flatMap((seccion) => [
+					...seccion.parrafos.filter((parrafo) => !esRuido(parrafo)),
+					...seccion.grupos
+						.filter((grupo) => grupo.items.length > 0)
+						.map((grupo) => comoTexto(grupo.items)),
+				])
+		: (coche.body ?? '')
+				.split(/\n{2,}/)
+				.map((parrafo) => parrafo.trim())
+				.filter(Boolean);
 
 const mensajeWhatsapp = encodeURIComponent(
 	`Hola, me interesa el ${nombre} ${data.variant} (ref. ${data.reference}).`,
