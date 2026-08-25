@@ -1,0 +1,14 @@
+Referencia: 606977
+Marca: Seat
+Modelo: Leon
+Version: Cupra R 300
+Precio: 24000
+Kilometros: 60000
+Fecha: 05/2019
+Combustible: Gasolina
+Cambio: Manual
+Color: Rojo
+Fotos: 01,03
+
+Comentario:
+Prueba de fotos.
