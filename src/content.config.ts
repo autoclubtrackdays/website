@@ -1,5 +1,4 @@
 import { defineCollection, z } from 'astro:content';
-import { glob } from 'astro/loaders';
 import type { Loader, LoaderContext } from 'astro/loaders';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -53,10 +52,6 @@ const esquemaCoche = z.object({
 	warranty: z.string().optional(),
 });
 
-// Cada coche antiguo es una carpeta con su .md; el id es la carpeta, no la ruta
-// del archivo, para no arrastrar el nombre repetido.
-const rutaComoId = ({ entry }: { entry: string }) => entry.split('/')[0];
-
 /**
  * Lee las entradas en .txt y las añade al store.
  *
@@ -89,15 +84,7 @@ async function cargarTxt(carpeta: string, contexto: LoaderContext) {
 	}
 }
 
-/**
- * Combina el lector de siempre con el de .txt.
- *
- * El de Astro borra del store todo lo que no ha tocado, así que tiene que ir
- * primero: si fuera al revés se llevaría por delante las entradas en .txt.
- */
 function lectorCoches(carpeta: string): Loader {
-	const antiguo = glob({ base: carpeta, pattern: '**/*.md', generateId: rutaComoId });
-
 	return {
 		name: 'coches',
 		load: async (contexto) => {
@@ -106,7 +93,6 @@ function lectorCoches(carpeta: string): Loader {
 			// borrado del disco seguiría generando su página indefinidamente.
 			contexto.store.clear();
 
-			await antiguo.load(contexto);
 			await cargarTxt(carpeta, contexto);
 		},
 	};

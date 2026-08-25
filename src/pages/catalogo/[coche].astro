@@ -3,7 +3,6 @@ import type { CollectionEntry } from 'astro:content';
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import { CONTACTO } from '../../lib/contacto';
-import { secciones } from '../../lib/ficha';
 import {
 	cambioTexto,
 	fotos,
@@ -45,7 +44,7 @@ interface Props {
 const { coche, vendido } = Astro.props;
 const { data } = coche;
 
-const galeria = fotos(coche.id);
+const galeria = fotos(coche);
 const { contado, financiado } = precios(data, coche.body);
 const nombre = nombreCorto(data);
 
@@ -59,117 +58,53 @@ const resumen = [
 	{ campo: 'Color', valor: data.color },
 ].filter((dato): dato is { campo: string; valor: string } => Boolean(dato.valor));
 
-// Las entradas nuevas (.txt) traen cada dato en su campo y el cuerpo es solo el
-// comentario. Las del volcado antiguo (.md) llevan los datos en tablas dentro
-// del cuerpo, así que hay que seguir parseándolas mientras existan: cuando no
-// quede ninguna, sobra `secciones()` y con ella src/lib/ficha.ts.
-const delVolcado = secciones(coche.body);
-
 const fila = (campo: string, valor: unknown) => ({ campo, valor: String(valor ?? '') });
 
 const conValor = (filas: { campo: string; valor: string }[]) =>
 	filas.filter((fila) => fila.valor !== '' && fila.valor !== 'undefined');
 
-/** Ficha y estado a partir de los campos, para las entradas nuevas. */
-function bloquesDesdeCampos() {
-	const ficha = conValor([
-		fila('Marca', data.make),
-		fila('Modelo', data.model),
-		fila('Versión', data.variant),
-		fila('Tipo de vehículo', data.body_type),
-		fila('Kilometraje', kmTexto(data.mileage_km)),
-		fila('Fecha', data.first_registration),
-		fila('Potencia', potenciaTexto(data)),
-		fila('Cilindrada', data.displacement_cc && `${data.displacement_cc} cm³`),
-		fila('Combustible', data.fuel),
-		fila('Cambio', cambioTexto(data.transmission)),
-		fila('Tracción', data.drivetrain),
-		fila('Puertas', data.doors),
-		fila('Plazas', data.seats),
-		fila('Color exterior', data.color),
-		fila('Tipo de pintura', data.paint),
-		fila('Consumo', data.consumption),
-	]);
+// Ficha y estado se construyen desde los campos del .txt. Solo se pinta lo que
+// tiene valor, así un coche sin cilindrada no deja una fila vacía.
+const bloques = [
+	{
+		titulo: 'Ficha técnica',
+		filas: conValor([
+			fila('Marca', data.make),
+			fila('Modelo', data.model),
+			fila('Versión', data.variant),
+			fila('Tipo de vehículo', data.body_type),
+			fila('Kilometraje', kmTexto(data.mileage_km)),
+			fila('Fecha', data.first_registration),
+			fila('Potencia', potenciaTexto(data)),
+			fila('Cilindrada', data.displacement_cc && `${data.displacement_cc} cm³`),
+			fila('Combustible', data.fuel),
+			fila('Cambio', cambioTexto(data.transmission)),
+			fila('Tracción', data.drivetrain),
+			fila('Puertas', data.doors),
+			fila('Plazas', data.seats),
+			fila('Color exterior', data.color),
+			fila('Tipo de pintura', data.paint),
+			fila('Consumo', data.consumption),
+		]),
+	},
+	{
+		titulo: 'Estado e historial',
+		filas: conValor([
+			fila('Ha tenido accidentes', data.accidents),
+			fila('Libro de mantenimiento completo', data.service_book),
+			fila('ITV nueva', data.itv),
+			fila('Fumador', data.smoker),
+			fila('Vehículo de alquiler', data.rental),
+			fila('Garantía', data.warranty),
+		]),
+	},
+].filter((seccion) => seccion.filas.length > 0);
 
-	const estado = conValor([
-		fila('Ha tenido accidentes', data.accidents),
-		fila('Libro de mantenimiento completo', data.service_book),
-		fila('ITV nueva', data.itv),
-		fila('Fumador', data.smoker),
-		fila('Vehículo de alquiler', data.rental),
-		fila('Garantía', data.warranty),
-	]);
-
-	return [
-		{ titulo: 'Ficha técnica', filas: ficha, grupos: [], parrafos: [] },
-		{ titulo: 'Estado e historial', filas: estado, grupos: [], parrafos: [] },
-	].filter((seccion) => seccion.filas.length > 0);
-}
-
-/** Tablas rescatadas del markdown, para las entradas del volcado antiguo. */
-function bloquesDelVolcado() {
-	// Lista blanca, no negra: cada anuncio traía las secciones que le daba la
-	// gana (hay uno que convierte su titular en un ## con los extras debajo).
-	const TABLAS = ['Ficha técnica', 'Dimensiones y pesos', 'Estado e historial'];
-
-	return delVolcado
-		.filter((seccion) => TABLAS.includes(seccion.titulo))
-		.map((seccion) => {
-			if (seccion.titulo !== 'Ficha técnica') return seccion;
-
-			const kw = seccion.filas.find((fila) => fila.campo === 'Potencia (kW)')?.valor;
-
-			return {
-				...seccion,
-				filas: seccion.filas
-					.filter((fila) => !['Estado', 'Potencia (kW)'].includes(fila.campo))
-					.map((fila) => {
-						if (fila.campo === 'Primera matriculación') return { ...fila, campo: 'Fecha' };
-						if (fila.campo === 'Potencia' && kw) return { ...fila, valor: `${fila.valor} (${kw})` };
-						return fila;
-					}),
-			};
-		});
-}
-
-const bloques = delVolcado.length > 0 ? bloquesDelVolcado() : bloquesDesdeCampos();
-
-// Se descarta lo que repite el precio o la coletilla de la financiación, y los
-// títulos sueltos, que se reconocen por ser demasiado cortos para ser una frase.
-const esRuido = (parrafo: string) =>
-	parrafo.length < 40 ||
-	/precio/i.test(parrafo) ||
-	/financiaci[óo]n|entidad financiera|sujeto a/i.test(parrafo) ||
-	/^(extras|equipamiento)/i.test(parrafo);
-
-/** Los puntos de una lista se unen en un párrafo: aquí no hay etiquetas. */
-const comoTexto = (items: string[]) =>
-	items
-		.map((item) => item.trim().replace(/\.$/, ''))
-		.filter(Boolean)
-		.join('. ') + '.';
-
-const DESCARTADAS = ['Vendedor', 'Imágenes', 'Consumo y emisiones', 'Equipamiento'];
-const TABLAS = ['Ficha técnica', 'Dimensiones y pesos', 'Estado e historial'];
-
-// En las entradas nuevas el cuerpo entero es el comentario; en las antiguas hay
-// que rescatarlo de las secciones que no son tabla.
-const comentarios =
-	delVolcado.length > 0
-		? delVolcado
-				.filter(
-					(seccion) => !TABLAS.includes(seccion.titulo) && !DESCARTADAS.includes(seccion.titulo),
-				)
-				.flatMap((seccion) => [
-					...seccion.parrafos.filter((parrafo) => !esRuido(parrafo)),
-					...seccion.grupos
-						.filter((grupo) => grupo.items.length > 0)
-						.map((grupo) => comoTexto(grupo.items)),
-				])
-		: (coche.body ?? '')
-				.split(/\n{2,}/)
-				.map((parrafo) => parrafo.trim())
-				.filter(Boolean);
+// El cuerpo del .txt es el comentario, tal cual lo escribió el vendedor.
+const comentarios = (coche.body ?? '')
+	.split(/\n{2,}/)
+	.map((parrafo) => parrafo.trim())
+	.filter(Boolean);
 
 const mensajeWhatsapp = encodeURIComponent(
 	`Hola, me interesa el ${nombre} ${data.variant} (ref. ${data.reference}).`,

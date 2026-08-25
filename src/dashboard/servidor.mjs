@@ -332,22 +332,6 @@ async function listarCoches(respuesta) {
 			continue;
 		}
 
-		// Entradas del volcado antiguo: se pueden vender o borrar, pero no editar
-		// desde aquí, porque su formato es otro.
-		if (entrada.isDirectory()) {
-			const md = join(COCHES, entrada.name, `${entrada.name}.md`);
-			const contenido = await readFile(md, 'utf8').catch(() => '');
-			const dato = (clave) => contenido.match(new RegExp(`^${clave}: *"?(.+?)"?$`, 'm'))?.[1] ?? '';
-
-			coches.push({
-				id: entrada.name,
-				editable: false,
-				titulo: dato('title'),
-				referencia: dato('reference'),
-				precio: dato('price_eur'),
-				fotos: Number(dato('images')) || 0,
-			});
-		}
 	}
 
 	coches.sort((a, b) => a.titulo.localeCompare(b.titulo));

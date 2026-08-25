@@ -5,32 +5,26 @@ type Datos = CollectionEntry<'coches'>['data'];
 /** Base del bucket R2, p. ej. https://cdn.autoclubtrackdays.com */
 const CDN_BASE = import.meta.env.PUBLIC_CDN_BASE;
 
-/** Mientras no haya R2, las fotos salen de la carpeta media/ de cada coche. */
-const GALERIAS = import.meta.glob<string>('/src/content/coches/*/media/*.jpg', {
-	eager: true,
-	query: '?url',
-	import: 'default',
-});
-
 /** Red de seguridad para un coche que llegue sin fotos. */
 const PLACEHOLDER = '/placeholders/1.jpg';
 
-/** Foto de portada. Cuando exista PUBLIC_CDN_BASE tirará de R2 y la carpeta
- *  media/ dejará de usarse sin tocar ningún componente. */
-export function portada(id: string): string {
-	if (CDN_BASE) return `${CDN_BASE.replace(/\/$/, '')}/coches/${id}/01-640.webp`;
-	return GALERIAS[`/src/content/coches/${id}/media/01.jpg`] ?? PLACEHOLDER;
+const enR2 = (referencia: unknown, indice: number) =>
+	`${CDN_BASE.replace(/\/$/, '')}/coches/${referencia}/${String(indice).padStart(2, '0')}.webp`;
+
+/** Las fotos se nombran por referencia, que es como las sube el panel. */
+type ConFotos = { data: Pick<Datos, 'reference' | 'images'> };
+
+export function portada(coche: ConFotos): string {
+	return CDN_BASE && coche.data.reference ? enR2(coche.data.reference, 1) : PLACEHOLDER;
 }
 
-/** Todas las fotos del coche, en el orden en que las numeró el origen. */
-export function fotos(id: string): string[] {
-	const prefijo = `/src/content/coches/${id}/media/`;
-	const encontradas = Object.entries(GALERIAS)
-		.filter(([ruta]) => ruta.startsWith(prefijo))
-		.sort(([a], [b]) => a.localeCompare(b))
-		.map(([, url]) => url);
+/** Todas las fotos, en orden. El número sale del campo `Fotos` del archivo. */
+export function fotos(coche: ConFotos): string[] {
+	const cuantas = coche.data.images ?? 0;
 
-	return encontradas.length > 0 ? encontradas : [PLACEHOLDER];
+	if (!CDN_BASE || !coche.data.reference || cuantas < 1) return [PLACEHOLDER];
+
+	return Array.from({ length: cuantas }, (_, indice) => enR2(coche.data.reference, indice + 1));
 }
 
 /** 'BMW M4 M4A' + referencia -> 'bmw-m4-m4a-19903975'.
