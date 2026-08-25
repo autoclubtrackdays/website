@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { AwsClient } from 'aws4fetch';
 import sharp from 'sharp';
-import { CAMPOS, generarTxt, parsearTxt } from '../lib/formato-txt.mjs';
+import { CAMPOS, generarTxt, nombresDeFotos, parsearTxt } from '../lib/formato-txt.mjs';
 
 const ejecutar = promisify(execFile);
 
@@ -128,7 +128,7 @@ async function subirFoto(peticion, respuesta, parametros) {
 	const referencia = parametros.get('referencia');
 	const indice = Number(parametros.get('indice'));
 
-	if (!referencia || !Number.isInteger(indice)) {
+	if (!referencia || !Number.isInteger(indice) || indice < 1) {
 		return json(respuesta, 400, { error: 'Falta la referencia o el índice de la foto' });
 	}
 
@@ -160,6 +160,71 @@ async function subirFoto(peticion, respuesta, parametros) {
 		bytesOriginal: original.length,
 		bytesSubidos: optimizada.length,
 	});
+}
+
+/** Nombres de las fotos que hay ahora mismo en R2 para un coche. */
+async function fotosEnR2(referencia) {
+	if (!r2Configurado() || !referencia) return [];
+
+	const listado = await clienteR2()
+		.fetch(`${urlBucket()}?list-type=2&prefix=${encodeURIComponent(`coches/${referencia}/`)}`)
+		.catch(() => null);
+
+	if (!listado?.ok) return [];
+
+	const xml = await listado.text();
+
+	return [...xml.matchAll(/<Key>[^<]*\/([^<\/]+)\.webp<\/Key>/g)]
+		.map((encontrada) => encontrada[1])
+		.sort();
+}
+
+/** Fotos de un coche, para pintarlas al editar. */
+async function listarFotos(respuesta, parametros) {
+	const referencia = parametros.get('referencia');
+	const nombres = await fotosEnR2(referencia);
+
+	json(respuesta, 200, {
+		fotos: nombres.map((nombre) => ({
+			nombre,
+			url: `${process.env.PUBLIC_CDN_BASE?.replace(/\/$/, '')}/coches/${referencia}/${nombre}.webp`,
+		})),
+	});
+}
+
+/** Borra una foto suelta. Las demás no se renumeran: el .txt guarda sus nombres. */
+async function borrarFoto(respuesta, parametros) {
+	const referencia = parametros.get('referencia');
+	const nombre = parametros.get('nombre');
+
+	if (!referencia || !nombre) return json(respuesta, 400, { error: 'Falta referencia o nombre' });
+
+	const borrado = await clienteR2()
+		.fetch(`${urlBucket()}/coches/${referencia}/${nombre}.webp`, { method: 'DELETE' })
+		.catch(() => null);
+
+	if (!borrado?.ok) return json(respuesta, 502, { error: 'R2 no pudo borrar la foto' });
+
+	json(respuesta, 200, { borrada: nombre });
+}
+
+/** ¿Hay cambios hechos y sin publicar? Lo consulta el panel para saber si al
+ *  cerrar hay que publicar o puede apagarse sin más. */
+async function hayPendiente(respuesta) {
+	const { stdout: sinGuardar } = await ejecutar(
+		'git',
+		['status', '--porcelain', 'src/content', 'src/lib/destacados.ts'],
+		{ cwd: RAIZ },
+	);
+
+	const { stdout: sinEnviar } = await ejecutar('git', ['log', '--oneline', '@{u}..HEAD'], {
+		cwd: RAIZ,
+	}).catch(() => ({ stdout: '' }));
+
+	const cambios = sinGuardar.trim().split('\n').filter(Boolean).length;
+	const commits = sinEnviar.trim().split('\n').filter(Boolean).length;
+
+	json(respuesta, 200, { hay: cambios + commits > 0, cambios, commits });
 }
 
 /** Publica: add, commit y push. Devuelve la salida tal cual para poder leerla. */
@@ -224,23 +289,33 @@ async function leerEntrada(carpeta, id) {
 	return { ruta, datos, comentario };
 }
 
+// Tolera la anotación de tipo: cuando la lista se queda vacía el archivo pasa a
+// `DESTACADOS: string[] = []`, y un patrón más estricto dejaba de encontrarla y
+// se limitaba a no escribir nada, sin avisar.
+const ARRAY_DESTACADOS = /(export const DESTACADOS[^=]*=\s*\[)([\s\S]*?)(\];)/;
+
 /** Ids de la lista de destacados, en el orden en que salen en el carrusel. */
 async function leerDestacados() {
 	const texto = await readFile(DESTACADOS, 'utf8').catch(() => '');
-	const bloque = texto.match(/export const DESTACADOS = \[([\s\S]*?)\]/);
-	return bloque ? [...bloque[1].matchAll(/'([^']+)'/g)].map((linea) => linea[1]) : [];
+	const bloque = texto.match(ARRAY_DESTACADOS);
+
+	return bloque ? [...bloque[2].matchAll(/'([^']+)'/g)].map((linea) => linea[1]) : [];
 }
 
 /** Reescribe solo el array, respetando el comentario de cabecera del archivo. */
 async function escribirDestacados(ids) {
 	const texto = await readFile(DESTACADOS, 'utf8');
+
+	if (!ARRAY_DESTACADOS.test(texto)) {
+		throw new Error('No se encontró la lista DESTACADOS en src/lib/destacados.ts');
+	}
+
 	const cuerpo = ids.map((id) => `\t'${id}',`).join('\n');
 
 	await writeFile(
 		DESTACADOS,
-		texto.replace(
-			/(export const DESTACADOS = \[)[\s\S]*?(\n\];)/,
-			`$1\n${cuerpo}$2`,
+		texto.replace(ARRAY_DESTACADOS, (_, inicio, __, fin) =>
+			ids.length > 0 ? `${inicio}\n${cuerpo}\n${fin}` : `${inicio}${fin}`,
 		),
 		'utf8',
 	);
@@ -305,37 +380,33 @@ async function borrarFotos(referencia) {
 	return { borradas, configurado: true };
 }
 
-/** Lista lo que hay en venta, para la pantalla de edición. */
-async function listarCoches(respuesta) {
+/** Coches de una carpeta, para las pantallas de listado. */
+async function listarDe(carpeta) {
 	let entradas = [];
 	try {
-		entradas = await readdir(COCHES, { withFileTypes: true });
+		entradas = await readdir(carpeta, { withFileTypes: true });
 	} catch {
-		return json(respuesta, 200, { coches: [] });
+		return [];
 	}
 
 	const coches = [];
 
 	for (const entrada of entradas) {
-		if (entrada.isFile() && entrada.name.endsWith('.txt')) {
-			const id = entrada.name.replace(/\.txt$/, '');
-			const { datos } = await leerEntrada(COCHES, id);
+		if (!entrada.isFile() || !entrada.name.endsWith('.txt')) continue;
 
-			coches.push({
-				id,
-				editable: true,
-				titulo: [datos.make, datos.model, datos.variant].filter(Boolean).join(' '),
-				referencia: datos.reference ?? '',
-				precio: datos.price_eur ?? '',
-				fotos: datos.images ?? 0,
-			});
-			continue;
-		}
+		const id = entrada.name.replace(/\.txt$/, '');
+		const { datos } = await leerEntrada(carpeta, id);
 
+		coches.push({
+			id,
+			titulo: [datos.make, datos.model, datos.variant].filter(Boolean).join(' '),
+			referencia: datos.reference ?? '',
+			precio: datos.price_eur ?? '',
+			fotos: nombresDeFotos(datos.images).length,
+		});
 	}
 
-	coches.sort((a, b) => a.titulo.localeCompare(b.titulo));
-	json(respuesta, 200, { coches });
+	return coches.sort((a, b) => a.titulo.localeCompare(b.titulo));
 }
 
 /** Devuelve un coche para rellenar el formulario de edición. */
@@ -350,8 +421,14 @@ async function actualizarCoche(peticion, respuesta, id) {
 	const { datos = {}, comentario = '' } = JSON.parse(await leerCuerpo(peticion));
 	const anterior = await leerEntrada(COCHES, id);
 
-	// La referencia no se toca nunca: es lo que el cliente tiene apuntado.
-	const completos = { ...datos, reference: anterior.datos.reference };
+	// La referencia no se toca nunca: es lo que el cliente tiene apuntado. Y si el
+	// formulario no manda fotos se conservan las de antes, porque editar el
+	// nombre de un coche no debería vaciarle la galería.
+	const completos = {
+		...datos,
+		reference: anterior.datos.reference,
+		images: datos.images ?? anterior.datos.images,
+	};
 	const nuevoId = nombreDeArchivo(completos);
 
 	await writeFile(join(COCHES, `${nuevoId}.txt`), generarTxt(completos, comentario), 'utf8');
@@ -381,20 +458,15 @@ async function marcarVendido(respuesta, id) {
 }
 
 /** Borra el coche y, si se puede, sus fotos de R2. */
-async function eliminarCoche(respuesta, id) {
-	let referencia = '';
+async function eliminarCoche(respuesta, id, carpeta = COCHES) {
+	const entrada = await leerEntrada(carpeta, id).catch(() => null);
 
-	const entrada = await leerEntrada(COCHES, id).catch(() => null);
-	if (entrada) {
-		referencia = String(entrada.datos.reference ?? '');
-		await rm(entrada.ruta);
-	} else {
-		// Entrada del volcado antiguo: sus fotos están en la propia carpeta.
-		await rm(join(COCHES, id), { recursive: true, force: true });
-	}
+	if (!entrada) return json(respuesta, 404, { error: `No se encontró ${id}` });
 
+	await rm(entrada.ruta);
 	await quitarDeDestacados(id);
-	const fotos = await borrarFotos(referencia);
+
+	const fotos = await borrarFotos(String(entrada.datos.reference ?? ''));
 
 	json(respuesta, 200, { eliminado: true, fotos });
 }
@@ -402,9 +474,7 @@ async function eliminarCoche(respuesta, id) {
 /** Destacados actuales y candidatos, para la pantalla de destacados. */
 async function pantallaDestacados(respuesta) {
 	const ids = await leerDestacados();
-	const { coches } = await new Promise((resolver) => {
-		listarCoches({ writeHead() {}, end: (cuerpo) => resolver(JSON.parse(cuerpo)) });
-	});
+	const coches = await listarDe(COCHES);
 
 	const porId = new Map(coches.map((coche) => [coche.id, coche]));
 
@@ -445,7 +515,17 @@ const servidor = createServer(async (peticion, respuesta) => {
 		}
 
 		if (peticion.method === 'GET' && url.pathname === '/api/coches') {
-			return await listarCoches(respuesta);
+			return json(respuesta, 200, { coches: await listarDe(COCHES) });
+		}
+
+		if (peticion.method === 'GET' && url.pathname === '/api/vendidos') {
+			return json(respuesta, 200, { coches: await listarDe(VENDIDOS) });
+		}
+
+		const deVendido = url.pathname.match(/^\/api\/vendido\/([^/]+)$/);
+
+		if (deVendido && peticion.method === 'DELETE') {
+			return await eliminarCoche(respuesta, decodeURIComponent(deVendido[1]), VENDIDOS);
 		}
 
 		if (peticion.method === 'GET' && url.pathname === '/api/destacados') {
@@ -476,8 +556,14 @@ const servidor = createServer(async (peticion, respuesta) => {
 			if (peticion.method === 'POST' && deCoche[2]) return await marcarVendido(respuesta, id);
 		}
 
-		if (peticion.method === 'POST' && url.pathname === '/api/fotos') {
-			return await subirFoto(peticion, respuesta, url.searchParams);
+		if (url.pathname === '/api/fotos') {
+			if (peticion.method === 'POST') return await subirFoto(peticion, respuesta, url.searchParams);
+			if (peticion.method === 'GET') return await listarFotos(respuesta, url.searchParams);
+			if (peticion.method === 'DELETE') return await borrarFoto(respuesta, url.searchParams);
+		}
+
+		if (peticion.method === 'GET' && url.pathname === '/api/pendiente') {
+			return await hayPendiente(respuesta);
 		}
 
 		if (peticion.method === 'POST' && url.pathname === '/api/publicar') {

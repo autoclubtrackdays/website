@@ -94,10 +94,21 @@
 				border-color: #e6d200;
 			}
 
-			button.fantasma {
-				border-color: #4b5563;
-				background: transparent;
-				color: #fff;
+			header button {
+				border-color: #fff;
+				background: #fff;
+				color: #111827;
+			}
+
+			header button:hover:not(:disabled) {
+				border-color: var(--amarillo);
+				background: var(--amarillo);
+			}
+
+			/* Cuando hay algo sin publicar, el botón lo dice y se pone amarillo. */
+			header button.pendiente {
+				border-color: var(--amarillo);
+				background: var(--amarillo);
 			}
 
 			button:disabled {
@@ -138,6 +149,24 @@
 				aspect-ratio: 4 / 3;
 				object-fit: cover;
 				border: 1px solid var(--borde);
+			}
+
+			#miniaturas .quitar {
+				position: absolute;
+				top: 0;
+				right: 0;
+				padding: 0.125rem 0.375rem;
+				border: 0;
+				border-radius: 0;
+				background: #000;
+				color: #fff;
+				font-size: 0.75rem;
+				line-height: 1.2;
+				cursor: pointer;
+			}
+
+			#miniaturas .quitar:hover {
+				background: #dc2626;
 			}
 
 			#miniaturas figcaption {
@@ -312,10 +341,6 @@
 				font-size: 0.8125rem;
 			}
 
-			.tabla tr.antigua td:not(.botones) {
-				color: var(--gris);
-			}
-
 			.atras {
 				margin-top: 2rem;
 			}
@@ -337,7 +362,7 @@
 	<body>
 		<header>
 			<strong>Autoclub Trackdays</strong>
-			<button class="fantasma" id="cerrar">Cerrar panel</button>
+			<button id="cerrar">Cerrar panel</button>
 		</header>
 
 		<main>
@@ -353,6 +378,7 @@
 				<button class="principal" id="empezar">Añadir nuevo coche</button>
 				<button id="ver-lista">Coches en venta</button>
 				<button id="ver-destacados">Cambiar destacados</button>
+				<button id="ver-vendidos">Coches vendidos</button>
 			</div>
 
 			<div class="atras oculto" id="zona-atras">
@@ -361,6 +387,7 @@
 
 			<section id="lista" class="oculto"></section>
 			<section id="destacados" class="oculto"></section>
+			<section id="vendidos" class="oculto"></section>
 
 			<form id="formulario" class="oculto">
 				<h2>Fotos del coche</h2>
@@ -413,7 +440,12 @@
 			const MESES = ['01','02','03','04','05','06','07','08','09','10','11','12'];
 
 			let campos = [];
+
+			/** Fotos nuevas elegidas del disco, todavía sin subir. */
 			let fotos = [];
+
+			/** Fotos que ya están en R2 al editar: { nombre, url }. */
+			let subidas = [];
 
 			// --- Formulario, dibujado desde la misma lista que parsea los .txt ----
 
@@ -468,23 +500,68 @@
 			const esImagen = (archivo) => archivo.type.startsWith('image/');
 
 			function pintarMiniaturas() {
+				const total = subidas.length + fotos.length;
+
 				$('zona').querySelector('p').textContent =
-					fotos.length > 0
-						? `${fotos.length} foto${fotos.length === 1 ? '' : 's'} seleccionada${fotos.length === 1 ? '' : 's'}. La primera es la de portada.`
+					total > 0
+						? `${total} foto${total === 1 ? '' : 's'}. La primera es la de portada.`
 						: 'Arrastra aquí la carpeta con las fotos';
 
-				$('miniaturas').innerHTML = fotos
-					.map(
-						(foto, indice) =>
-							`<figure><img src="${URL.createObjectURL(foto)}" alt="" /><figcaption>${indice + 1}</figcaption></figure>`,
-					)
-					.join('');
+				// Primero las que ya están en R2, con su nombre real, y después las
+				// nuevas del disco. Cada una se puede quitar por separado.
+				const yaSubidas = subidas.map(
+					(foto, indice) => `<figure>
+						<img src="${foto.url}" alt="" />
+						<figcaption>${indice + 1}</figcaption>
+						<button type="button" class="quitar" data-quitar-subida="${foto.nombre}" title="Quitar esta foto">✕</button>
+					</figure>`,
+				);
+
+				const nuevas = fotos.map(
+					(foto, indice) => `<figure>
+						<img src="${URL.createObjectURL(foto)}" alt="" />
+						<figcaption>${subidas.length + indice + 1}</figcaption>
+						<button type="button" class="quitar" data-quitar-nueva="${indice}" title="Quitar esta foto">✕</button>
+					</figure>`,
+				);
+
+				$('miniaturas').innerHTML = [...yaSubidas, ...nuevas].join('');
 			}
 
+			// Quitar una foto suelta, esté ya en R2 o recién elegida.
+			$('miniaturas').addEventListener('click', async (evento) => {
+				const boton = evento.target.closest('button[data-quitar-subida], button[data-quitar-nueva]');
+				if (!boton) return;
+
+				const { quitarSubida, quitarNueva } = boton.dataset;
+
+				if (quitarNueva !== undefined) {
+					fotos.splice(Number(quitarNueva), 1);
+					return pintarMiniaturas();
+				}
+
+				if (!confirm('¿Quitar esta foto? Se borra de R2 y no se puede deshacer.')) return;
+
+				boton.disabled = true;
+				const referencia = $('formulario').dataset.referencia;
+
+				const borrada = await fetch(
+					`/api/fotos?referencia=${encodeURIComponent(referencia)}&nombre=${encodeURIComponent(quitarSubida)}`,
+					{ method: 'DELETE' },
+				).then((r) => r.json());
+
+				if (borrada.error) return alert(borrada.error);
+
+				subidas = subidas.filter((foto) => foto.nombre !== quitarSubida);
+				pintarMiniaturas();
+			});
+
 			function aceptarArchivos(lista) {
-				// Por nombre: es el orden en que salieron de la cámara y el que
-				// decide cuál es la foto de portada.
-				fotos = [...lista].filter(esImagen).sort((a, b) => a.name.localeCompare(b.name));
+				// Se añaden a lo que ya hubiera, para poder completar una galería en
+				// dos tandas. Por nombre, que es el orden en que salieron de la cámara.
+				const nuevas = [...lista].filter(esImagen).sort((a, b) => a.name.localeCompare(b.name));
+
+				fotos = [...fotos, ...nuevas];
 				pintarMiniaturas();
 			}
 
@@ -549,11 +626,23 @@
 					if (valor) datos[campo.clave] = campo.tipo === 'entero' ? Number(valor) : valor;
 				}
 
-				if (fotos.length > 0) datos.images = fotos.length;
+				// El campo guarda los nombres, no un contador: así se puede borrar una
+				// foto suelta sin renumerar el resto en R2.
+				const nombresNuevos = fotos.map((_, indice) =>
+					String(siguienteNumero() + indice).padStart(2, '0'),
+				);
+
+				const todas = [...subidas.map((foto) => foto.nombre), ...nombresNuevos];
+				if (todas.length > 0) datos.images = todas.join(',');
+
 				return datos;
 			}
 
 			const etiquetaDe = (clave) => campos.find((c) => c.clave === clave)?.etiqueta ?? clave;
+
+			/** Primer número libre, para no pisar una foto que ya esté en R2. */
+			const siguienteNumero = () =>
+				subidas.reduce((mayor, foto) => Math.max(mayor, Number(foto.nombre) || 0), 0) + 1;
 
 			$('formulario').addEventListener('submit', (e) => {
 				e.preventDefault();
@@ -587,6 +676,20 @@
 					// Editar reemplaza el .txt y conserva referencia y fotos; solo se
 					// vuelven a subir si se ha elegido una carpeta nueva.
 					if (editando) {
+						const referencia = $('formulario').dataset.referencia;
+						const desde = siguienteNumero();
+
+						for (const [indice, foto] of fotos.entries()) {
+							avisar(`Subiendo fotos nuevas… ${indice + 1} de ${fotos.length}`);
+
+							const subida = await fetch(
+								`/api/fotos?referencia=${referencia}&indice=${desde + indice}`,
+								{ method: 'POST', body: foto },
+							).then((r) => r.json());
+
+							if (subida.error) throw new Error(`Foto ${indice + 1}: ${subida.error}`);
+						}
+
 						const cambio = await fetch(`/api/coche/${encodeURIComponent(editando)}`, {
 							method: 'PUT',
 							headers: { 'content-type': 'application/json' },
@@ -595,14 +698,9 @@
 
 						if (cambio.error) throw new Error(cambio.error);
 
-						avisar(
-							`Coche actualizado.
-							 <div class="acciones"><button class="principal" id="publicar">Publicar en la web</button></div>`,
-							'bueno',
-						);
-
-						$('publicar').addEventListener('click', publicar);
+						avisar('Coche actualizado.', 'bueno');
 						editando = null;
+						await revisarPendiente();
 						return;
 					}
 
@@ -628,12 +726,11 @@
 					}
 
 					avisar(
-						`Coche creado con la referencia <strong>${alta.referencia}</strong> y ${fotos.length} fotos subidas.
-						 <div class="acciones"><button class="principal" id="publicar">Publicar en la web</button></div>`,
+						`Coche creado con la referencia <strong>${alta.referencia}</strong> y ${fotos.length} fotos subidas.`,
 						'bueno',
 					);
 
-					$('publicar').addEventListener('click', publicar);
+					await revisarPendiente();
 					$('formulario').classList.add('oculto');
 				} catch (error) {
 					avisar(`No se pudo completar: ${error.message}`, 'malo');
@@ -642,24 +739,35 @@
 				}
 			});
 
-			async function publicar(evento) {
-				evento.target.disabled = true;
-				avisar('Publicando…');
-
+			/** Publica todo lo pendiente de una vez. Devuelve si ha ido bien.
+			 *
+			 *  Se hace al cerrar y no después de cada cambio: un commit por cambio
+			 *  es un despliegue por cambio, y Cloudflare los encola. */
+			async function publicar() {
 				const resultado = await fetch('/api/publicar', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ mensaje: 'Nuevo coche desde el panel' }),
+					body: JSON.stringify({ mensaje: 'Cambios desde el panel' }),
 				}).then((r) => r.json());
 
-				if (resultado.error) return avisar(`No se pudo publicar: ${resultado.error}`, 'malo');
+				if (resultado.error) {
+					avisar(`No se pudo publicar: ${resultado.error}`, 'malo');
+					return false;
+				}
 
-				avisar(
-					resultado.publicado
-						? 'Publicado. En unos minutos estará visible en la web.'
-						: resultado.detalle,
-					'bueno',
-				);
+				return true;
+			}
+
+			/** Mira si queda algo sin publicar y lo refleja en el botón de cerrar. */
+			async function revisarPendiente() {
+				const estado = await fetch('/api/pendiente')
+					.then((r) => r.json())
+					.catch(() => ({ hay: false }));
+
+				$('cerrar').textContent = estado.hay ? 'Publicar y cerrar' : 'Cerrar panel';
+				$('cerrar').classList.toggle('pendiente', estado.hay);
+
+				return estado.hay;
 			}
 
 			// --- Pantallas ---------------------------------------------------------
@@ -674,6 +782,7 @@
 				$('zona-atras').classList.toggle('oculto', pantalla === 'inicio');
 				$('lista').classList.toggle('oculto', pantalla !== 'lista');
 				$('destacados').classList.toggle('oculto', pantalla !== 'destacados');
+				$('vendidos').classList.toggle('oculto', pantalla !== 'vendidos');
 				$('formulario').classList.toggle('oculto', pantalla !== 'formulario');
 				if (pantalla !== 'formulario') $('resultado').innerHTML = '';
 			}
@@ -681,6 +790,8 @@
 			function irAlInicio() {
 				editando = null;
 				fotos = [];
+				subidas = [];
+				delete $('formulario').dataset.referencia;
 				$('formulario').reset();
 				pintarMiniaturas();
 				pintarCampos();
@@ -692,6 +803,9 @@
 
 			$('empezar').addEventListener('click', () => {
 				editando = null;
+				fotos = [];
+				subidas = [];
+				pintarMiniaturas();
 				pintarCampos();
 				mostrar('formulario', 'Nuevo coche');
 			});
@@ -710,7 +824,7 @@
 					<tbody>
 						${coches
 							.map(
-								(coche) => `<tr class="${coche.editable === false ? 'antigua' : ''}">
+								(coche) => `<tr>
 									<td class="ref">${coche.referencia}</td>
 									<td>${coche.titulo}</td>
 									<td>${coche.precio ? Number(coche.precio).toLocaleString('es-ES') + ' €' : ''}</td>
@@ -734,19 +848,13 @@
 					return;
 				}
 
-				const antiguas = coches.filter((coche) => !coche.editable).length;
-
-				$('lista').innerHTML =
-					tablaDeCoches(coches, (coche) =>
-						[
-							coche.editable ? `<button data-editar="${coche.id}">Editar</button>` : '',
-							`<button data-vendido="${coche.id}">Marcar vendido</button>`,
-							`<button data-eliminar="${coche.id}">Eliminar</button>`,
-						].join(''),
-					) +
-					(antiguas > 0
-						? `<p class="ayuda">Los ${antiguas} coches en gris son del volcado antiguo: se pueden vender o borrar, pero no editar desde aquí.</p>`
-						: '');
+				$('lista').innerHTML = tablaDeCoches(coches, (coche) =>
+					[
+						`<button data-editar="${coche.id}">Editar</button>`,
+						`<button data-vendido="${coche.id}">Marcar vendido</button>`,
+						`<button data-eliminar="${coche.id}">Eliminar</button>`,
+					].join(''),
+				);
 			}
 
 			$('ver-lista').addEventListener('click', verLista);
@@ -779,6 +887,44 @@
 
 			$('ver-destacados').addEventListener('click', verDestacados);
 
+			// --- Coches vendidos ---------------------------------------------------
+
+			async function verVendidos() {
+				mostrar('vendidos', 'Coches vendidos');
+				$('vendidos').innerHTML = '<p class="ayuda">Cargando…</p>';
+
+				const { coches } = await fetch('/api/vendidos').then((r) => r.json());
+
+				$('vendidos').innerHTML =
+					`<p class="ayuda">Sus fichas siguen publicadas en la web, con el distintivo de vendido. Al eliminarlos desaparecen del todo, con sus fotos.</p>` +
+					tablaDeCoches(
+						coches,
+						(coche) => `<button data-eliminar-vendido="${coche.id}">Eliminar</button>`,
+						'Todavía no has marcado ningún coche como vendido.',
+					);
+			}
+
+			$('ver-vendidos').addEventListener('click', verVendidos);
+
+			$('vendidos').addEventListener('click', async (evento) => {
+				const boton = evento.target.closest('button[data-eliminar-vendido]');
+				if (!boton) return;
+
+				if (!confirm('¿Eliminar este coche vendido del todo? Se borra su ficha y sus fotos. No se puede deshacer.')) return;
+
+				boton.disabled = true;
+				const borrado = await fetch(`/api/vendido/${encodeURIComponent(boton.dataset.eliminarVendido)}`, {
+					method: 'DELETE',
+				}).then((r) => r.json());
+
+				await verVendidos();
+				avisar(
+					`Eliminado.${borrado.fotos?.configurado ? ` Se borraron ${borrado.fotos.borradas} fotos de R2.` : ''}`,
+					'bueno',
+				);
+				await revisarPendiente();
+			});
+
 			$('destacados').addEventListener('click', async (evento) => {
 				const boton = evento.target.closest('button[data-quitar], button[data-anadir]');
 				if (!boton) return;
@@ -791,11 +937,8 @@
 				});
 
 				await verDestacados();
-				avisar(
-					'Hecho. Recuerda pulsar Publicar para que el cambio llegue a la web. <div class="acciones"><button class="principal" id="publicar">Publicar en la web</button></div>',
-					'bueno',
-				);
-				$('publicar').addEventListener('click', publicar);
+				avisar('Hecho.', 'bueno');
+				await revisarPendiente();
 			});
 
 			$('lista').addEventListener('click', async (evento) => {
@@ -811,6 +954,16 @@
 					pintarCampos(coche.datos);
 					$('comentario').value = coche.comentario ?? '';
 					fotos = [];
+
+					// La referencia se guarda en el formulario: hace falta para subir
+					// o borrar fotos de este coche mientras se edita.
+					$('formulario').dataset.referencia = coche.datos.reference ?? '';
+
+					const yaEstan = await fetch(
+						`/api/fotos?referencia=${encodeURIComponent(coche.datos.reference ?? '')}`,
+					).then((r) => r.json());
+
+					subidas = yaEstan.fotos ?? [];
 					pintarMiniaturas();
 					mostrar('formulario', 'Editar coche');
 					return;
@@ -838,20 +991,34 @@
 				}
 
 				await verLista();
-				avisar(`Hecho.${nota} Recuerda pulsar Publicar para que el cambio llegue a la web. <div class="acciones"><button class="principal" id="publicar">Publicar en la web</button></div>`, 'bueno');
-				$('publicar').addEventListener('click', publicar);
+				avisar(`Hecho.${nota}`, 'bueno');
+				await revisarPendiente();
 			});
 
 			$('cerrar').addEventListener('click', async () => {
+				$('cerrar').disabled = true;
+
+				if (await revisarPendiente()) {
+					avisar('Publicando los cambios…');
+
+					// Si el envío falla no se cierra: hay que poder leer el error y
+					// volver a intentarlo, en vez de perder el aviso al apagar.
+					if (!(await publicar())) {
+						$('cerrar').disabled = false;
+						return;
+					}
+				}
+
 				await fetch('/api/apagar', { method: 'POST' }).catch(() => {});
 				document.body.innerHTML =
-					'<main><h1>Panel cerrado</h1><p>Ya puedes cerrar esta pestaña.</p></main>';
+					'<main><h1>Panel cerrado</h1><p>Los cambios están publicados. En unos minutos se verán en la web.</p><p>Ya puedes cerrar esta pestaña.</p></main>';
 			});
 
 			const inicio = await fetch('/api/campos').then((r) => r.json());
 			campos = inicio.campos;
 			if (!inicio.r2) $('aviso-r2').classList.remove('oculto');
 			pintarCampos();
+			await revisarPendiente();
 		</script>
 	</body>
 </html>

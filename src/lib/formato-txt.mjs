@@ -88,7 +88,7 @@ export const CAMPOS = [
 	{ etiqueta: 'Fumador', clave: 'smoker', tipo: 'sino' },
 	{ etiqueta: 'Vehiculo de alquiler', clave: 'rental', tipo: 'sino' },
 	{ etiqueta: 'Garantia', clave: 'warranty', tipo: 'texto', ayuda: 'Por ejemplo: 12 meses' },
-	{ etiqueta: 'Fotos', clave: 'images', tipo: 'entero', automatico: true },
+	{ etiqueta: 'Fotos', clave: 'images', tipo: 'texto', automatico: true },
 ];
 
 
@@ -148,3 +148,24 @@ export function generarTxt(datos, comentario = '') {
 /** El esquema exige `title`; en el archivo no se pide para no escribirlo dos veces. */
 export const componerTitulo = (datos) =>
 	[datos.make, datos.model, datos.variant].filter(Boolean).join(' ');
+
+/**
+ * Nombres de las fotos de un coche, a partir del campo `Fotos`.
+ *
+ * Guarda la lista («01,02,05») en vez de un contador para poder borrar una foto
+ * suelta sin tener que renumerar las demás en R2. Se admite también el formato
+ * antiguo, un número, por si queda alguna entrada escrita así.
+ */
+export function nombresDeFotos(valor) {
+	const bruto = String(valor ?? '').trim();
+	if (!bruto) return [];
+
+	if (/^\d+$/.test(bruto)) {
+		return Array.from({ length: Number(bruto) }, (_, i) => String(i + 1).padStart(2, '0'));
+	}
+
+	return bruto
+		.split(',')
+		.map((nombre) => nombre.trim())
+		.filter(Boolean);
+}

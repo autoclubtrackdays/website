@@ -35,7 +35,8 @@ const esquemaCoche = z.object({
 	condition: z.string().optional(),
 	reference: z.union([z.string(), z.number()]).optional(),
 	listing_id: z.string().optional(),
-	images: z.number().optional(),
+	/** Lista de nombres: '01,02,05'. Admite un número por compatibilidad. */
+	images: z.coerce.string().optional(),
 	source_url: z.string().optional(),
 
 	// Campos que en el volcado antiguo vivían dentro de las tablas del cuerpo y

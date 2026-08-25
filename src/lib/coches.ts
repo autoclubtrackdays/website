@@ -1,4 +1,5 @@
 import type { CollectionEntry } from 'astro:content';
+import { nombresDeFotos } from './formato-txt.mjs';
 
 type Datos = CollectionEntry<'coches'>['data'];
 
@@ -8,23 +9,23 @@ const CDN_BASE = import.meta.env.PUBLIC_CDN_BASE;
 /** Red de seguridad para un coche que llegue sin fotos. */
 const PLACEHOLDER = '/placeholders/1.jpg';
 
-const enR2 = (referencia: unknown, indice: number) =>
-	`${CDN_BASE.replace(/\/$/, '')}/coches/${referencia}/${String(indice).padStart(2, '0')}.webp`;
+const enR2 = (referencia: unknown, nombre: string) =>
+	`${CDN_BASE.replace(/\/$/, '')}/coches/${referencia}/${nombre}.webp`;
 
 /** Las fotos se nombran por referencia, que es como las sube el panel. */
 type ConFotos = { data: Pick<Datos, 'reference' | 'images'> };
 
 export function portada(coche: ConFotos): string {
-	return CDN_BASE && coche.data.reference ? enR2(coche.data.reference, 1) : PLACEHOLDER;
+	return fotos(coche)[0];
 }
 
-/** Todas las fotos, en orden. El número sale del campo `Fotos` del archivo. */
+/** Todas las fotos, en el orden en que las dejó el panel. */
 export function fotos(coche: ConFotos): string[] {
-	const cuantas = coche.data.images ?? 0;
+	const nombres = nombresDeFotos(coche.data.images);
 
-	if (!CDN_BASE || !coche.data.reference || cuantas < 1) return [PLACEHOLDER];
+	if (!CDN_BASE || !coche.data.reference || nombres.length === 0) return [PLACEHOLDER];
 
-	return Array.from({ length: cuantas }, (_, indice) => enR2(coche.data.reference, indice + 1));
+	return nombres.map((nombre) => enR2(coche.data.reference, nombre));
 }
 
 /** 'BMW M4 M4A' + referencia -> 'bmw-m4-m4a-19903975'.
