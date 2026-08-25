@@ -1,34 +1,76 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { CONTACTO, WHATSAPP_ENLACE } from '../lib/contacto';
+
+// Con un ejemplo al lado se entiende al momento el nivel de detalle que vale.
+const encargo = [
+	{ campo: 'Modelo', ejemplo: 'Porsche 718 Cayman' },
+	{ campo: 'Motor y cambio', ejemplo: '4.0 GTS, manual' },
+	{ campo: 'Color y tapicería', ejemplo: 'Gris ágata, cuero negro' },
+	{ campo: 'Equipamiento', ejemplo: 'Chrono, escape deportivo' },
+	{ campo: 'Presupuesto y plazo', ejemplo: 'Hasta 90.000 €, sin prisa' },
+];
 ---
 
-<Layout title="Pedidos custom – Autoclub Trackdays" description="Pedidos custom: localizamos el coche que buscas con las especificaciones que pidas.">
-	<section class="mx-auto max-w-6xl px-6 pt-16 pb-20">
+<Layout
+	title="Pedidos custom – Autoclub Trackdays"
+	description="Localizamos el coche que buscas con las especificaciones que pidas: motor, color, equipamiento y presupuesto."
+>
+	<section class="mx-auto max-w-6xl px-6 py-16">
 		<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
 			Pedidos custom
 		</h1>
 		<span class="mt-3 block h-1 w-16 bg-(--accent)"></span>
 
 		<p class="mt-6 max-w-2xl text-lg text-gray-600">
-			¿Buscas un modelo concreto, con su motor, su color y su equipamiento? Dinos qué quieres y lo localizamos por ti.
+			Si el coche que quieres no está en el catálogo, lo buscamos por ti.
 		</p>
 
-		<div class="mt-10 flex flex-wrap gap-4">
-			<a
-				href={`tel:${CONTACTO.telefono.tel}`}
-				class="rounded-sm bg-(--accent) px-8 py-4 text-lg font-semibold text-black transition hover:-translate-y-1 hover:bg-(--accent-strong)"
-			>
-				Llamar {CONTACTO.telefono.texto}
-			</a>
-			<a
-				href={WHATSAPP_ENLACE}
-				target="_blank"
-				rel="noopener"
-				class="rounded-sm border border-gray-300 px-8 py-4 text-lg font-semibold text-gray-900 transition hover:-translate-y-1 hover:border-gray-900"
-			>
-				WhatsApp
-			</a>
+		<div class="mt-14 grid items-start gap-12 lg:grid-cols-[1.8fr_1fr] lg:gap-16">
+			<div class="max-w-xl">
+				<p class="text-sm tracking-wide text-gray-500 uppercase">Ejemplo de pedido:</p>
+
+				<dl class="mt-6 border-t border-gray-200">
+					{
+						encargo.map((linea) => (
+							<div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-gray-200 py-4">
+								<dt class="font-semibold text-gray-900">{linea.campo}</dt>
+								<dd class="text-gray-500 italic">{linea.ejemplo}</dd>
+							</div>
+						))
+					}
+				</dl>
+
+				<p class="mt-6 text-gray-600">
+					Con eso empezamos a buscar y te vamos pasando lo que encontremos, con fotos, historial y
+					precio puesto en Madrid. Tú decides cuál merece la pena ver.
+				</p>
+			</div>
+
+			<aside class="border border-gray-200 bg-gray-50 p-8 lg:sticky lg:top-28">
+				<p class="text-sm tracking-wide text-gray-500 uppercase">Haz tu encargo</p>
+
+				<p class="mt-4 text-gray-600">
+					Dinos qué buscas, aunque sea a grandes rasgos, y te decimos si es fácil de encontrar.
+				</p>
+
+				<div class="mt-6 flex flex-col gap-3">
+					<a
+						href={WHATSAPP_ENLACE}
+						target="_blank"
+						rel="noopener"
+						class="rounded-sm bg-(--accent) px-6 py-3 text-center font-semibold text-black transition hover:-translate-y-1 hover:bg-(--accent-strong)"
+					>
+						Escribir por WhatsApp
+					</a>
+					<a
+						href={`tel:${CONTACTO.telefono.tel}`}
+						class="rounded-sm border border-gray-300 bg-white px-6 py-3 text-center font-semibold text-gray-900 transition hover:-translate-y-1 hover:border-gray-900"
+					>
+						Llamar {CONTACTO.telefono.texto}
+					</a>
+				</div>
+			</aside>
 		</div>
 	</section>
 </Layout>

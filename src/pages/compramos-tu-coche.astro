@@ -1,34 +1,73 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { CONTACTO, WHATSAPP_ENLACE } from '../lib/contacto';
+
+const necesitamos = [
+	'Marca, modelo y versión',
+	'Año y kilómetros',
+	'Estado e historial: mantenimientos, golpes, ITV',
+	'Extras y equipamiento',
+	'Fotos del exterior, del interior y del cuadro',
+];
 ---
 
-<Layout title="Compramos tu coche – Autoclub Trackdays" description="Compramos tu coche en Madrid: tasación sin compromiso y precio cerrado.">
-	<section class="mx-auto max-w-6xl px-6 pt-16 pb-20">
+<Layout
+	title="Compramos tu coche – Autoclub Trackdays"
+	description="Compramos tu coche en Madrid: mándanos los datos y las fotos por WhatsApp, te damos un precio cerrado y nos ocupamos del papeleo."
+>
+	<section class="mx-auto max-w-6xl px-6 py-16">
 		<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
 			Compramos tu coche
 		</h1>
 		<span class="mt-3 block h-1 w-16 bg-(--accent)"></span>
 
 		<p class="mt-6 max-w-2xl text-lg text-gray-600">
-			Te lo tasamos y te damos un precio cerrado. Si te encaja, el coche es nuestro ese mismo día y del papeleo nos encargamos nosotros.
+			Lo tasamos y te decimos lo que vale. Si te encaja, nos lo quedamos.
 		</p>
 
-		<div class="mt-10 flex flex-wrap gap-4">
-			<a
-				href={`tel:${CONTACTO.telefono.tel}`}
-				class="rounded-sm bg-(--accent) px-8 py-4 text-lg font-semibold text-black transition hover:-translate-y-1 hover:bg-(--accent-strong)"
-			>
-				Llamar {CONTACTO.telefono.texto}
-			</a>
-			<a
-				href={WHATSAPP_ENLACE}
-				target="_blank"
-				rel="noopener"
-				class="rounded-sm border border-gray-300 px-8 py-4 text-lg font-semibold text-gray-900 transition hover:-translate-y-1 hover:border-gray-900"
-			>
-				WhatsApp
-			</a>
+		<div class="mt-14 grid items-start gap-12 lg:grid-cols-[1.8fr_1fr] lg:gap-16">
+			<div class="max-w-2xl">
+				<p class="text-sm tracking-wide text-gray-500 uppercase">Qué necesitamos</p>
+
+				<ul class="mt-4 list-disc space-y-2 pl-5 text-gray-600 marker:text-(--accent)">
+					{necesitamos.map((punto) => <li>{punto}</li>)}
+				</ul>
+
+				<p class="mt-8 text-gray-600">
+					Nos lo mandas todo por WhatsApp y te damos un precio cerrado, sin subastas ni
+					intermediarios. Si te convence, quedamos para ver el coche y cerramos la operación:
+					nosotros nos ocupamos del cambio de titularidad y del papeleo.
+				</p>
+
+				<p class="mt-4 text-gray-600">
+					Y si lo que quieres es cambiar de coche, lo descontamos de cualquiera del catálogo.
+				</p>
+			</div>
+
+			<aside class="border border-gray-200 bg-gray-50 p-8 lg:sticky lg:top-28">
+				<p class="text-sm tracking-wide text-gray-500 uppercase">Pide tu tasación</p>
+
+				<p class="mt-4 text-gray-600">
+					Mándanos los datos y las fotos por WhatsApp y te decimos un precio.
+				</p>
+
+				<div class="mt-6 flex flex-col gap-3">
+					<a
+						href={WHATSAPP_ENLACE}
+						target="_blank"
+						rel="noopener"
+						class="rounded-sm bg-(--accent) px-6 py-3 text-center font-semibold text-black transition hover:-translate-y-1 hover:bg-(--accent-strong)"
+					>
+						Escribir por WhatsApp
+					</a>
+					<a
+						href={`tel:${CONTACTO.telefono.tel}`}
+						class="rounded-sm border border-gray-300 bg-white px-6 py-3 text-center font-semibold text-gray-900 transition hover:-translate-y-1 hover:border-gray-900"
+					>
+						Llamar {CONTACTO.telefono.texto}
+					</a>
+				</div>
+			</aside>
 		</div>
 	</section>
 </Layout>
