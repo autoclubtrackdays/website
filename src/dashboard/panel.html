@@ -899,7 +899,9 @@
 					`<p class="ayuda">Sus fichas siguen publicadas en la web, con el distintivo de vendido. Al eliminarlos desaparecen del todo, con sus fotos.</p>` +
 					tablaDeCoches(
 						coches,
-						(coche) => `<button data-eliminar-vendido="${coche.id}">Eliminar</button>`,
+						(coche) =>
+							`<button data-devolver="${coche.id}">Devolver al catálogo</button>` +
+							`<button data-eliminar-vendido="${coche.id}">Eliminar</button>`,
 						'Todavía no has marcado ningún coche como vendido.',
 					);
 			}
@@ -907,13 +909,26 @@
 			$('ver-vendidos').addEventListener('click', verVendidos);
 
 			$('vendidos').addEventListener('click', async (evento) => {
-				const boton = evento.target.closest('button[data-eliminar-vendido]');
+				const boton = evento.target.closest('button[data-eliminar-vendido], button[data-devolver]');
 				if (!boton) return;
 
-				if (!confirm('¿Eliminar este coche vendido del todo? Se borra su ficha y sus fotos. No se puede deshacer.')) return;
-
+				const { eliminarVendido, devolver } = boton.dataset;
 				boton.disabled = true;
-				const borrado = await fetch(`/api/vendido/${encodeURIComponent(boton.dataset.eliminarVendido)}`, {
+
+				if (devolver) {
+					await fetch(`/api/vendido/${encodeURIComponent(devolver)}/devolver`, { method: 'POST' });
+
+					await verVendidos();
+					avisar('Vuelve a estar en el catálogo, con sus fotos.', 'bueno');
+					return await revisarPendiente();
+				}
+
+				if (!confirm('¿Eliminar este coche vendido del todo? Se borra su ficha y sus fotos. No se puede deshacer.')) {
+					boton.disabled = false;
+					return;
+				}
+
+				const borrado = await fetch(`/api/vendido/${encodeURIComponent(eliminarVendido)}`, {
 					method: 'DELETE',
 				}).then((r) => r.json());
 

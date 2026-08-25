@@ -443,18 +443,19 @@ async function actualizarCoche(peticion, respuesta, id) {
 
 /** Mueve el coche a vendidos. Las fotos se quedan: su ficha sigue publicada. */
 async function marcarVendido(respuesta, id) {
-	const esTxt = await readFile(join(COCHES, `${id}.txt`), 'utf8').then(
-		() => true,
-		() => false,
-	);
-
-	const origen = esTxt ? join(COCHES, `${id}.txt`) : join(COCHES, id);
-	const destino = esTxt ? join(VENDIDOS, `${id}.txt`) : join(VENDIDOS, id);
-
-	await rename(origen, destino);
+	await rename(join(COCHES, `${id}.txt`), join(VENDIDOS, `${id}.txt`));
 	await quitarDeDestacados(id);
 
 	json(respuesta, 200, { vendido: true, id });
+}
+
+/** Lo contrario: vuelve al catálogo. Útil cuando una venta se cae, o cuando se
+ *  marcó vendido por error. Las fotos nunca se movieron, así que no hay nada
+ *  que reponer en R2. */
+async function devolverAlCatalogo(respuesta, id) {
+	await rename(join(VENDIDOS, `${id}.txt`), join(COCHES, `${id}.txt`));
+
+	json(respuesta, 200, { devuelto: true, id });
 }
 
 /** Borra el coche y, si se puede, sus fotos de R2. */
@@ -522,10 +523,13 @@ const servidor = createServer(async (peticion, respuesta) => {
 			return json(respuesta, 200, { coches: await listarDe(VENDIDOS) });
 		}
 
-		const deVendido = url.pathname.match(/^\/api\/vendido\/([^/]+)$/);
+		const deVendido = url.pathname.match(/^\/api\/vendido\/([^/]+?)(\/devolver)?$/);
 
-		if (deVendido && peticion.method === 'DELETE') {
-			return await eliminarCoche(respuesta, decodeURIComponent(deVendido[1]), VENDIDOS);
+		if (deVendido) {
+			const id = decodeURIComponent(deVendido[1]);
+
+			if (peticion.method === 'DELETE') return await eliminarCoche(respuesta, id, VENDIDOS);
+			if (peticion.method === 'POST' && deVendido[2]) return await devolverAlCatalogo(respuesta, id);
 		}
 
 		if (peticion.method === 'GET' && url.pathname === '/api/destacados') {
