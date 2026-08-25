@@ -1,6 +1,6 @@
 Referencia: 353111
 Marca: Ford
-Modelo: Mustang
+Modelo: Mustard
 Version: Shelby GT500
 Precio: 127500
 Precio financiado: 127400
@@ -22,7 +22,6 @@ Libro de mantenimiento: Sí
 ITV nueva: Sí
 Fumador: No
 Garantia: 12 meses
-Fotos: 21
 
 Comentario:
 Condiciones de la financiación:
