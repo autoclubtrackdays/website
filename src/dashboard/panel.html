@@ -40,7 +40,9 @@
 			}
 
 			main {
-				max-width: 56rem;
+				/* 72rem: el mismo ancho que max-w-6xl en la web, para que el panel y
+				   el sitio se sientan del mismo tamaño. */
+				max-width: 72rem;
 				margin: 0 auto;
 				padding: 0 1.5rem;
 			}
@@ -802,13 +804,24 @@
 					await fetch(`/api/coche/${encodeURIComponent(vendido)}/vendido`, { method: 'POST' });
 				}
 
+				let nota = '';
+
 				if (eliminar) {
 					if (!confirm('¿Eliminar este coche del todo? Se borra la ficha y sus fotos. No se puede deshacer.')) return;
-					await fetch(`/api/coche/${encodeURIComponent(eliminar)}`, { method: 'DELETE' });
+
+					const borrado = await fetch(`/api/coche/${encodeURIComponent(eliminar)}`, {
+						method: 'DELETE',
+					}).then((r) => r.json());
+
+					// Si las fotos se quedan en R2 hay que decirlo: si no, ocupan sitio
+					// para siempre sin que nadie se entere.
+					nota = borrado.fotos?.configurado
+						? ` Se borraron ${borrado.fotos.borradas} fotos de R2.`
+						: ' Las fotos siguen en R2: no estaba configurado.';
 				}
 
 				await verLista();
-				avisar('Hecho. Recuerda pulsar Publicar para que el cambio llegue a la web. <div class="acciones"><button class="principal" id="publicar">Publicar en la web</button></div>', 'bueno');
+				avisar(`Hecho.${nota} Recuerda pulsar Publicar para que el cambio llegue a la web. <div class="acciones"><button class="principal" id="publicar">Publicar en la web</button></div>`, 'bueno');
 				$('publicar').addEventListener('click', publicar);
 			});
 

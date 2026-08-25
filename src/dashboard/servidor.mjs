@@ -142,17 +142,10 @@ async function subirFoto(peticion, respuesta, parametros) {
 		.webp({ quality: 82 })
 		.toBuffer();
 
-	const cliente = new AwsClient({
-		accessKeyId: R2.clave,
-		secretAccessKey: R2.secreto,
-		service: 's3',
-		region: 'auto',
-	});
-
 	const nombre = String(indice).padStart(2, '0');
-	const url = `https://${R2.cuenta}.r2.cloudflarestorage.com/${R2.bucket}/coches/${referencia}/${nombre}.webp`;
+	const url = `${urlBucket()}/coches/${referencia}/${nombre}.webp`;
 
-	const subida = await cliente.fetch(url, {
+	const subida = await clienteR2().fetch(url, {
 		method: 'PUT',
 		body: optimizada,
 		headers: { 'content-type': 'image/webp' },
@@ -176,7 +169,10 @@ async function publicar(peticion, respuesta) {
 	);
 
 	try {
-		await ejecutar('git', ['add', 'src/content'], { cwd: RAIZ });
+		// destacados.ts va en el mismo commit a propósito: vender o borrar un coche
+		// destacado lo modifica, y publicar solo el contenido dejaría la lista
+		// apuntando a un coche que ya no existe. El build de Cloudflare fallaría.
+		await ejecutar('git', ['add', 'src/content', 'src/lib/destacados.ts'], { cwd: RAIZ });
 
 		// Solo lo preparado: `git status` a secas incluiría cambios de código que
 		// no tienen nada que ver con dar de alta un coche.
@@ -264,27 +260,49 @@ async function quitarDeDestacados(id) {
 	await escribirDestacados(actuales.filter((otro) => otro !== id));
 }
 
-/** Borra las fotos del coche en R2. Best effort: no se para el borrado por esto. */
-async function borrarFotos(referencia, cuantas) {
-	if (!r2Configurado() || !referencia || !cuantas) return 0;
-
-	const cliente = new AwsClient({
+const clienteR2 = () =>
+	new AwsClient({
 		accessKeyId: R2.clave,
 		secretAccessKey: R2.secreto,
 		service: 's3',
 		region: 'auto',
 	});
 
+const urlBucket = () => `https://${R2.cuenta}.r2.cloudflarestorage.com/${R2.bucket}`;
+
+/**
+ * Borra todas las fotos del coche en R2.
+ *
+ * Se le pregunta a R2 qué hay bajo la carpeta en vez de deducirlo del contador
+ * del archivo: si ese número está mal, o alguien subió fotos aparte, borrar
+ * `01..N` dejaría huérfanas las demás ocupando espacio para siempre.
+ */
+async function borrarFotos(referencia) {
+	if (!r2Configurado() || !referencia) return { borradas: 0, configurado: r2Configurado() };
+
+	const cliente = clienteR2();
+	const prefijo = `coches/${referencia}/`;
+
+	const listado = await cliente
+		.fetch(`${urlBucket()}?list-type=2&prefix=${encodeURIComponent(prefijo)}`)
+		.catch(() => null);
+
+	if (!listado?.ok) return { borradas: 0, configurado: true, error: 'No se pudo listar en R2' };
+
+	const xml = await listado.text();
+	const claves = [...xml.matchAll(/<Key>([^<]+)<\/Key>/g)].map((encontrada) => encontrada[1]);
+
 	let borradas = 0;
 
-	for (let indice = 1; indice <= cuantas; indice++) {
-		const nombre = String(indice).padStart(2, '0');
-		const url = `https://${R2.cuenta}.r2.cloudflarestorage.com/${R2.bucket}/coches/${referencia}/${nombre}.webp`;
-		const respuesta = await cliente.fetch(url, { method: 'DELETE' }).catch(() => null);
+	for (const clave of claves) {
+		const respuesta = await cliente
+			.fetch(`${urlBucket()}/${clave}`, { method: 'DELETE' })
+			.catch(() => null);
+
 		if (respuesta?.ok) borradas++;
 	}
 
-	return borradas;
+	return { borradas, configurado: true };
 }
 
 /** Lista lo que hay en venta, para la pantalla de edición. */
@@ -381,21 +399,20 @@ async function marcarVendido(respuesta, id) {
 /** Borra el coche y, si se puede, sus fotos de R2. */
 async function eliminarCoche(respuesta, id) {
 	let referencia = '';
-	let fotos = 0;
 
 	const entrada = await leerEntrada(COCHES, id).catch(() => null);
 	if (entrada) {
 		referencia = String(entrada.datos.reference ?? '');
-		fotos = entrada.datos.images ?? 0;
 		await rm(entrada.ruta);
 	} else {
+		// Entrada del volcado antiguo: sus fotos están en la propia carpeta.
 		await rm(join(COCHES, id), { recursive: true, force: true });
 	}
 
 	await quitarDeDestacados(id);
-	const borradas = await borrarFotos(referencia, fotos);
+	const fotos = await borrarFotos(referencia);
 
-	json(respuesta, 200, { eliminado: true, fotosBorradas: borradas });
+	json(respuesta, 200, { eliminado: true, fotos });
 }
 
 /** Destacados actuales y candidatos, para la pantalla de destacados. */
