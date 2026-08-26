@@ -98,7 +98,7 @@ async function generarReferencia() {
 async function altaCoche(peticion, respuesta) {
 	const { datos = {}, comentario = '' } = JSON.parse(await leerCuerpo(peticion));
 
-	const faltan = ['make', 'variant', 'price_eur', 'mileage_km', 'first_registration'].filter(
+	const faltan = ['make', 'price_eur', 'mileage_km', 'first_registration'].filter(
 		(clave) => datos[clave] === undefined || datos[clave] === '',
 	);
 

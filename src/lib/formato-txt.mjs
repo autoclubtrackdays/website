@@ -16,7 +16,12 @@ export const CAMPOS = [
 	{ etiqueta: 'Referencia', clave: 'reference', tipo: 'texto', automatico: true },
 	{ etiqueta: 'Marca', clave: 'make', tipo: 'texto', obligatorio: true },
 	{ etiqueta: 'Modelo', clave: 'model', tipo: 'texto' },
-	{ etiqueta: 'Version', clave: 'variant', tipo: 'texto', obligatorio: true },
+	{
+		etiqueta: 'Version',
+		clave: 'variant',
+		tipo: 'texto',
+		ayuda: 'Dejalo vacio si el coche no tiene mas nombre que el modelo',
+	},
 	{ etiqueta: 'Precio', clave: 'price_eur', tipo: 'entero', obligatorio: true, sufijo: '€' },
 	{
 		etiqueta: 'Precio financiado',

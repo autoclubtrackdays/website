@@ -1,7 +1,7 @@
 Referencia: 554620
 Marca: BMW
-Modelo: 325
-Version: ti Compact
+Modelo: 325ti
+Version: Compact
 Precio: 12500
 Kilometros: 378000
 Fecha: 07/2001

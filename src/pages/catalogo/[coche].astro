@@ -8,6 +8,7 @@ import {
 	fotos,
 	kmTexto,
 	nombreCorto,
+	nombreCompleto,
 	potenciaTexto,
 	precios,
 	precioTexto,
@@ -108,14 +109,14 @@ const comentarios = (coche.body ?? '')
 	.filter(Boolean);
 
 const mensajeWhatsapp = encodeURIComponent(
-	`Hola, me interesa el ${nombre} ${data.variant} (ref. ${data.reference}).`,
+	`Hola, me interesa el ${nombreCompleto(data)} (ref. ${data.reference}).`,
 );
 
 // Descripción propia por coche: si todas las fichas compartieran la del sitio,
 // Google las vería como veinte copias de la misma página. Se queda por debajo
 // de los 160 caracteres que muestra el buscador.
 const descripcion = [
-	`${nombre} ${data.variant}`,
+	nombreCompleto(data),
 	data.first_registration,
 	kmTexto(data.mileage_km),
 	potenciaTexto(data),
@@ -127,7 +128,7 @@ const descripcion = [
 ---
 
 <Layout
-	title={`${nombre} ${data.variant} – Autoclub Trackdays`}
+	title={`${nombreCompleto(data)} – Autoclub Trackdays`}
 	description={descripcion}
 	image={galeria[0]}
 	noindex={vendido}
@@ -169,7 +170,7 @@ const descripcion = [
 						<img
 							data-foto-principal
 							src={galeria[0]}
-							alt={`${nombre} ${data.variant}`}
+							alt={nombreCompleto(data)}
 							width="1200"
 							height="900"
 							class="aspect-4/3 w-full object-cover"
@@ -300,7 +301,7 @@ const descripcion = [
 							<img
 								data-foto-principal
 								src={galeria[0]}
-								alt={`${nombre} ${data.variant}`}
+								alt={nombreCompleto(data)}
 								class="max-h-full max-w-full object-contain"
 							/>
 
@@ -436,7 +437,7 @@ const descripcion = [
 			<div class="lg:col-span-2 lg:sticky lg:top-24">
 				<div>
 					<h1 class="text-4xl font-semibold tracking-tight text-gray-900">{nombre}</h1>
-					<p class="mt-1 text-xl text-gray-600">{data.variant}</p>
+					{data.variant && <p class="mt-1 text-xl text-gray-600">{data.variant}</p>}
 
 					<div class="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-gray-200 pt-6">
 						<div>

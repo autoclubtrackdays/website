@@ -1,7 +1,7 @@
 Referencia: 876499
 Marca: Volvo
 Modelo: XC90
-Version: D5 Inscription AWD 235 Aut.
+Version: D5 Inscription AWD
 Precio: 25900
 Precio financiado: 25800
 Kilometros: 144000

@@ -1,7 +1,7 @@
 Referencia: 623987
 Marca: Mercedes-Benz
 Modelo: CL 500
-Version: BE Aut.
+Version: BlueEfficiency
 Precio: 24900
 Precio financiado: 24800
 Kilometros: 196000

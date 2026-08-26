@@ -1,7 +1,7 @@
 Referencia: 145175
 Marca: Mitt
 Modelo: 125
-Version: Custom 2021 - 1.170 km
+Version: Custom
 Precio: 2300
 Kilometros: 1170
 Fecha: 99/2021

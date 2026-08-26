@@ -1,7 +1,6 @@
 Referencia: 286617
 Marca: Mercedes-Benz
-Modelo: C 250
-Version: Coupé 250d 9G-Tronic
+Modelo: C 250 d
 Precio: 29900
 Precio financiado: 29800
 Kilometros: 269000

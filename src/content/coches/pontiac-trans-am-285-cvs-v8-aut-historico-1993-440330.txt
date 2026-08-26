@@ -1,7 +1,7 @@
 Referencia: 440330
 Marca: Pontiac
-Modelo: Trans
-Version: Am 285 cvs V8 aut histórico 1993
+Modelo: Trans Am
+Version: V8
 Precio: 12900
 Kilometros: 99999
 Fecha: 99/1993

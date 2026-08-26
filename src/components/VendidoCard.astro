@@ -25,6 +25,8 @@ const { data } = coche;
 
 	<div class="p-5">
 		<h3 class="text-xl font-semibold text-gray-900">{nombreCorto(data)}</h3>
-		<p class="mt-0.5 text-lg text-gray-600">{data.variant}</p>
+		<!-- Se reserva la linea aunque el coche no tenga version, para que el
+		     precio quede a la misma altura en todas las tarjetas de la fila. -->
+		<p class="mt-0.5 text-lg text-gray-600 min-h-7">{data.variant}</p>
 	</div>
 </div>

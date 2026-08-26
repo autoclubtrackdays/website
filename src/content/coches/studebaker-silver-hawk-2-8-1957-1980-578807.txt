@@ -1,7 +1,6 @@
 Referencia: 578807
 Marca: Studebaker
-Modelo: Silver
-Version: Hawk 2.8 1957 1980
+Modelo: Silver Hawk
 Precio: 23800
 Kilometros: 99999
 Fecha: 99/1957

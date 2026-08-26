@@ -1,7 +1,7 @@
 Referencia: 454497
 Marca: Ford
 Modelo: Mustang
-Version: Shelby V8 5.2 GT500
+Version: Shelby GT500
 Precio: 127900
 Precio financiado: 127400
 Kilometros: 7000

@@ -15,7 +15,8 @@ const esquemaCoche = z.object({
 	make: z.string(),
 	/** Coerce porque YAML lee un modelo como '325' en número. */
 	model: z.coerce.string().optional(),
-	variant: z.coerce.string(),
+	/** Opcional: un MINI 1000 o un M4 no tienen mas version que el modelo. */
+	variant: z.coerce.string().optional(),
 	price_eur: z.number(),
 	price_financed_eur: z.number().optional(),
 	price_formatted: z.string().optional(),

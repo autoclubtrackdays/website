@@ -1,7 +1,7 @@
 Referencia: 781704
 Marca: Mitsubishi
 Modelo: Montero
-Version: 3.2 DI-D GLS Kaiteki AT
+Version: 3.2 DI-D GLS Kaiteki
 Precio: 10900
 Kilometros: 303400
 Fecha: 09/2002

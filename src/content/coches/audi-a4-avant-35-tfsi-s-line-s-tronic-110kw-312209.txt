@@ -1,7 +1,7 @@
 Referencia: 312209
 Marca: Audi
 Modelo: A4
-Version: Avant 35 TFSI S line S tronic 110kW
+Version: Avant 35 TFSI S line
 Precio: 24900
 Precio financiado: 24800
 Kilometros: 83000

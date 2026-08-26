@@ -1,7 +1,7 @@
 Referencia: 430317
 Marca: Citroen
 Modelo: Berlingo
-Version: Berlingo Van BlueHDi S&S Talla M CA 100
+Version: BlueHDi S&S Talla M
 Precio: 9900
 Kilometros: 109000
 Fecha: 10/2022

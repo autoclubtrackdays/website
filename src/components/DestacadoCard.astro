@@ -35,7 +35,9 @@ const { contado } = precios(data);
 
 	<div class="p-4">
 		<h3 class="text-base font-semibold text-gray-900">{nombreCorto(data)}</h3>
-		<p class="mt-0.5 text-sm text-gray-600">{data.variant}</p>
+		<!-- Se reserva la linea aunque el coche no tenga version, para que el
+		     precio quede a la misma altura en todas las tarjetas de la fila. -->
+		<p class="mt-0.5 text-sm text-gray-600 min-h-5">{data.variant}</p>
 
 		<p class="mt-1 text-sm text-gray-500">
 			{data.first_registration} · {kmTexto(data.mileage_km)} · {data.fuel} · {

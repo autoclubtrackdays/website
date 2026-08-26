@@ -1,7 +1,7 @@
 Referencia: 318023
 Marca: Mercedes-Benz
 Modelo: A 45 AMG
-Version: S 4Matic+ 8G-DCT
+Version: S 4Matic+
 Precio: 49900
 Precio financiado: 49800
 Kilometros: 84941

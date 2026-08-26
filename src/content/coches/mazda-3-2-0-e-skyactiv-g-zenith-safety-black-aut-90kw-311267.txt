@@ -1,7 +1,7 @@
 Referencia: 311267
 Marca: Mazda
 Modelo: 3
-Version: 2.0 e-Skyactiv-G Zenith Safety Black Aut. 90kW
+Version: 2.0 e-Skyactiv-G Zenith Safety Black
 Precio: 18900
 Precio financiado: 18400
 Kilometros: 121400

@@ -1,7 +1,7 @@
 Referencia: 936368
 Marca: Land Rover
 Modelo: Discovery
-Version: 3.0 SDV6 255 CV HSE 7 plazas
+Version: 3.0 SDV6 HSE
 Precio: 6900
 Precio financiado: 5800
 Kilometros: 243000

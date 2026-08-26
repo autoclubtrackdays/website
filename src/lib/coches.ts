@@ -57,6 +57,10 @@ export const kmTexto = (km: number) => `${kmFmt.format(km)} km`;
 /** 'BMW M4', 'Ford Mustang'. Sin `model` (algún clásico) tira del título. */
 export const nombreCorto = (data: Datos) => (data.model ? `${data.make} ${data.model}` : data.title);
 
+/** 'Mazda 3 2.0 e-Skyactiv-G Zenith Safety Black'. Sin version, solo el nombre. */
+export const nombreCompleto = (data: Datos) =>
+	[nombreCorto(data), data.variant].filter(Boolean).join(' ');
+
 /** '431 CV (317 kW)', o null en los coches que no declaran potencia. */
 export function potenciaTexto(data: Datos): string | null {
 	if (!data.power_kw && !data.power_hp) return null;

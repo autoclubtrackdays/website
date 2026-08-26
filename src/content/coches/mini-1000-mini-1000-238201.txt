@@ -1,7 +1,6 @@
 Referencia: 238201
 Marca: MINI
 Modelo: 1000
-Version: Mini 1000
 Precio: 11000
 Precio financiado: 10900
 Kilometros: 29800

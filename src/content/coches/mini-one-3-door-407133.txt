@@ -1,7 +1,6 @@
 Referencia: 407133
 Marca: MINI
 Modelo: One
-Version: 3 Door
 Precio: 3400
 Precio financiado: 3300
 Kilometros: 297000

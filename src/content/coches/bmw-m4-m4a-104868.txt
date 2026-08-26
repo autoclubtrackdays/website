@@ -1,7 +1,6 @@
 Referencia: 104868
 Marca: BMW
 Modelo: M4
-Version: M4A
 Precio: 53900
 Precio financiado: 53800
 Kilometros: 70500
