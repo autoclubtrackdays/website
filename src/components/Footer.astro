@@ -8,13 +8,18 @@ const year = new Date().getFullYear();
 	<div class="mx-auto max-w-6xl px-6 py-14">
 		<div class="flex flex-wrap gap-x-20 gap-y-10">
 			<div class="max-w-xs">
-				<img
-					src="/media/autoclub-3a-lockup.png"
-					alt="Autoclub Trackdays"
-					width="1280"
-					height="480"
-					class="h-24 w-auto"
-				/>
+				<!-- El logotipo enlaza a la portada, como el del header. Sin esto la
+				     portada no recibía ni un enlace desde el pie de las 28 páginas,
+				     mientras que el catálogo recibe uno desde el menú de cada una. -->
+				<a href="/" class="inline-block">
+					<img
+						src="/media/autoclub-3a-lockup.png"
+						alt="Autoclub Trackdays"
+						width="1280"
+						height="480"
+						class="h-24 w-auto"
+					/>
+				</a>
 				<p class="mt-4 text-sm text-gray-400">
 					Compraventa de vehículos en Madrid desde hace más de 25 años.
 				</p>

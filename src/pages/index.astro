@@ -91,6 +91,25 @@ const negocio = {
 	// Las marcas salen del stock real, así que la lista se actualiza sola.
 	brand: marcas.map((marca) => ({ '@type': 'Brand', name: marca })),
 };
+
+/**
+ * Identidad del sitio, aparte de la del negocio.
+ *
+ * Es lo que Google lee para decidir el nombre que enseña sobre el resultado y
+ * cuál de las páginas es la portada. Solo cuenta si está en la raíz del dominio:
+ * en un subdirectorio no la mira. `publisher` apunta por `@id` a la ficha del
+ * negocio de arriba en vez de repetir la dirección y el teléfono.
+ */
+const sitio = {
+	'@context': 'https://schema.org',
+	'@type': 'WebSite',
+	'@id': new URL('#sitio', Astro.site).href,
+	name: 'Autoclub Trackdays',
+	alternateName: 'Autoclub',
+	url: Astro.site?.href,
+	inLanguage: 'es-ES',
+	publisher: { '@id': new URL('#negocio', Astro.site).href },
+};
 ---
 
 <Layout title={titulo} description={descripcion}>
@@ -101,6 +120,7 @@ const negocio = {
 		<link rel="preload" as="image" href="/media/hero-1024.webp" media="(max-width: 767px)" />
 		<link rel="preload" as="image" href="/media/hero.webp" media="(min-width: 768px)" />
 		<script type="application/ld+json" set:html={JSON.stringify(negocio)} is:inline />
+		<script type="application/ld+json" set:html={JSON.stringify(sitio)} is:inline />
 	</Fragment>
 
 	<section class="relative flex min-h-140 items-end overflow-hidden bg-black lg:aspect-12/5 lg:min-h-0">
@@ -323,6 +343,50 @@ const negocio = {
 						class="aspect-4/3 w-full lg:aspect-auto lg:h-full"></iframe>
 				</div>
 			</div>
+		</div>
+	</section>
+	<!-- Quiénes somos, al final y plegado.
+	     `<details>` es nativo: no necesita JavaScript, funciona con teclado y el
+	     contenido de dentro sí lo indexa Google, porque el visitante puede
+	     abrirlo. Que es la diferencia entre esto y esconder el texto, que es
+	     spam y se paga con una acción manual. -->
+	<section class="border-t border-gray-200 bg-white">
+		<div class="mx-auto max-w-7xl px-6 py-12">
+			<details class="group">
+				<summary
+					class="flex cursor-pointer list-none items-center gap-3 text-base font-semibold tracking-wide text-gray-500 uppercase transition hover:text-gray-900 [&::-webkit-details-marker]:hidden"
+				>
+					Más sobre nosotros
+					<svg
+						viewBox="0 0 20 20"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
+						aria-hidden="true"
+					>
+						<path d="m5 8 5 5 5-5"></path>
+					</svg>
+				</summary>
+
+				<div class="mt-8 grid gap-6 text-base leading-relaxed text-gray-600 md:grid-cols-2 md:gap-12">
+					<p>
+						Autoclub Trackdays es una compraventa de vehículos de ocasión en Madrid.
+						Llevamos más de veinticinco años en el sector y más de quinientos coches
+						vendidos, y seguimos atendiendo en el mismo sitio: {CONTACTO.direccion},
+						{' '}{CONTACTO.horario.toLowerCase()}.
+					</p>
+
+					<p>
+						En el catálogo hay de todo, porque compramos lo que nos gusta: utilitarios y
+						familiares para el día a día, deportivos y cabrios, y algún clásico. Si el que
+						buscas no está, lo localizamos; y si quieres vender el tuyo, te lo compramos o
+						te lo vendemos nosotros.
+					</p>
+				</div>
+			</details>
 		</div>
 	</section>
 </Layout>

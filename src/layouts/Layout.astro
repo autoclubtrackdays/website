@@ -61,8 +61,14 @@ const cdn = import.meta.env.PUBLIC_CDN_BASE;
 		     ahorra el ida y vuelta de DNS y TLS cuando toca descargarlas. -->
 		{cdn && <link rel="preconnect" href={cdn} crossorigin />}
 
+		<!-- El de 192 va primero porque es el que mira Google para el icono del
+		     resultado de búsqueda: recomienda pasar de 48 px y hasta ahora el mayor
+		     declarado eran 32. Los de 16 y 32 se quedan para la pestaña, y el .ico
+		     de la raíz para lo que lo pida por costumbre en vez de leer el head. -->
+		<link rel="icon" type="image/png" sizes="192x192" href="/media/autoclub-3a-favicon-192.png" />
 		<link rel="icon" type="image/png" sizes="32x32" href="/media/autoclub-3a-favicon-32.png" />
 		<link rel="icon" type="image/png" sizes="16x16" href="/media/autoclub-3a-favicon-16.png" />
+		<link rel="icon" href="/favicon.ico" sizes="48x48" />
 		<link rel="apple-touch-icon" sizes="180x180" href="/media/autoclub-3a-favicon-180.png" />
 
 		<slot name="cabeza" />
