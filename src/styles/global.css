@@ -1,29 +1,21 @@
 @import "tailwindcss";
 
-/* Se sirve desde /public, no desde Google: sin peticiones a terceros.
-   `block` en lugar de `swap` evita el parpadeo de medio segundo en el que el
-   logotipo se veía con la tipografía de respaldo antes de cambiar. Como el
-   archivo va precargado desde el <head>, la espera es inapreciable. */
-@font-face {
-	font-family: 'Bebas Neue';
-	src: url('/fonts/bebas-neue.woff2') format('woff2');
-	font-weight: 400;
-	font-style: normal;
-	font-display: block;
-}
-
 :root {
 	--accent: #ffea00;
 	--accent-strong: #e6d200;
-	/* Condensada y de caja alta: la letra de los dorsales y los circuitos.
-	   Solo para el nombre de la marca, nunca para texto corrido. */
-	--font-marca: 'Bebas Neue', 'Arial Narrow', system-ui, sans-serif;
 }
 
-.marca {
-	font-family: var(--font-marca);
-	letter-spacing: 0.02em;
-	line-height: 1;
+/* Foto del hero. Va aquí y no en un `style` de la página para poder servir una
+   versión más pequeña en móvil: 63 KB en lugar de 194 KB, sobre una imagen que
+   además se ve recortada y bajo un degradado. */
+.hero-foto {
+	background-image: url('/media/hero-1024.webp');
+}
+
+@media (min-width: 768px) {
+	.hero-foto {
+		background-image: url('/media/hero.webp');
+	}
 }
 
 /* El salto a #contacto se hace deslizando. El scroll-padding descuenta la

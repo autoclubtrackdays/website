@@ -1,0 +1,23 @@
+Coches que necesitan repaso.
+El 99999 y el 99/9999 marcan lo que no se pudo deducir de ninguna de las dos fuentes.
+
+145175  Mitt 125 Custom 2021 - 1.170 km — sin datos en AutoScout, revisar: fuel, transmission, power_hp
+440330  Pontiac Trans Am 285 cvs V8 aut histórico 1993 — sin datos en AutoScout, revisar: mileage_km
+578807  Studebaker Silver Hawk 2.8 1957 1980 — sin datos en AutoScout, revisar: mileage_km, fuel, transmission, power_hp
+
+Diferencias entre Wallapop y AutoScout (se ha usado el dato de AutoScout salvo el precio):
+  Audi S4 Avant V6 T 354 cvs 2018: precio 35.490 € en Wallapop contra 34.800 € en AutoScout
+  Citroën Berlingo Van Talla M BlueHDi 100 S&S 6v –: precio 9900 € en Wallapop contra 9500 € en AutoScout
+  Ford Mustang 2021: precio 127.900 € en Wallapop contra 127.400 € en AutoScout
+  Land Rover Discovery 4 211 cvs 7 plazas averiado: precio 6900 € en Wallapop contra 5800 € en AutoScout
+  Mazda 3 Skyactiv Hybrid 122 cvs ECO: precio 18.900 € en Wallapop contra 18.400 € en AutoScout
+  Mercedes C250 d coupe Brabus/CRS 2016: kilómetros 25.353 en Wallapop contra 269.000 en AutoScout
+  MINI 1000 Special histórico 45 cvs: precio 11.000 € en Wallapop contra 11.900 € en AutoScout
+
+Pendientes de la web (no son datos de coches):
+  Instagram — en src/lib/contacto.ts la direccion es '#': el icono del footer no lleva a ningun sitio, y es lo que le falta a Google para atar la web al perfil
+  Footer — el enlace 'Privacidad y Terminos' apunta a '#' y esas paginas no existen; el aviso legal es obligatorio para una empresa
+  Cloudflare — www.autoclubtrackdays.com y autoclubtrackdays.com responden las dos con un 200 sin redirigir: hace falta una regla que mande una a la otra
+  Google — dar de alta el sitio en Search Console y enviarle https://autoclubtrackdays.com/sitemap.xml
+  GitHub — revocar el token personal que se paso por el chat, seguia siendo valido
+  Publicar — todo lo hecho desde el catalogo esta sin commitear y sin subir a GitHub

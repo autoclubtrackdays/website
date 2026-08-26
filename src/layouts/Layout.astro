@@ -6,9 +6,28 @@ import Footer from '../components/Footer.astro';
 interface Props {
 	title?: string;
 	description?: string;
+	/** Imagen para WhatsApp y redes. Absoluta o de /public; por defecto, el local. */
+	image?: string;
+	/** Páginas que no aportan nada en Google (por ejemplo, el histórico de vendidos). */
+	noindex?: boolean;
 }
 
-const { title = 'Autoclub Trackdays', description = 'Compra-venta de vehículos – Madrid.' } = Astro.props;
+const {
+	title = 'Autoclub Trackdays | Compraventa de coches en Madrid',
+	description = 'Compraventa de coches en Madrid desde hace más de 25 años. Deportivos, clásicos y utilitarios revisados, con garantía y financiación. Isla de Sumatra Nº 36, 28034 Madrid.',
+	image = '/media/og.jpg',
+	noindex = false,
+} = Astro.props;
+
+// La canónica le dice a Google cuál es la dirección buena de esta página, para
+// que www y el dominio pelado no compitan entre sí como si fueran dos webs.
+// Con barra al final, que es la forma a la que redirige el servidor: apuntar a
+// la otra sería mandar a Google a una redirección en cada página.
+const canonica = new URL(Astro.url.pathname.replace(/\/?$/, '/'), Astro.site);
+const imagenAbsoluta = new URL(image, Astro.site).href;
+
+// El origen del bucket de fotos, para abrir la conexión desde el principio.
+const cdn = import.meta.env.PUBLIC_CDN_BASE;
 ---
 
 <!doctype html>
@@ -17,16 +36,36 @@ const { title = 'Autoclub Trackdays', description = 'Compra-venta de vehículos 
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
-		<meta name="description" content={description} />
-		<link
-			rel="preload"
-			href="/fonts/bebas-neue.woff2"
-			as="font"
-			type="font/woff2"
-			crossorigin
-		/>
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
 		<title>{title}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={canonica.href} />
+		{noindex && <meta name="robots" content="noindex, follow" />}
+
+		<meta name="theme-color" content="#000000" />
+
+		<!-- Tarjeta al compartir el enlace por WhatsApp, Instagram o Facebook. -->
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Autoclub Trackdays" />
+		<meta property="og:locale" content="es_ES" />
+		<meta property="og:url" content={canonica.href} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={imagenAbsoluta} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={imagenAbsoluta} />
+
+		<!-- Las fotos van en otro dominio: abrir la conexión desde el principio
+		     ahorra el ida y vuelta de DNS y TLS cuando toca descargarlas. -->
+		{cdn && <link rel="preconnect" href={cdn} crossorigin />}
+
+		<link rel="icon" type="image/png" sizes="32x32" href="/media/autoclub-3a-favicon-32.png" />
+		<link rel="icon" type="image/png" sizes="16x16" href="/media/autoclub-3a-favicon-16.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/media/autoclub-3a-favicon-180.png" />
+
+		<slot name="cabeza" />
 	</head>
 	<body class="flex min-h-screen flex-col bg-white text-black">
 		<Header />

@@ -2,7 +2,6 @@
 import type { CollectionEntry } from 'astro:content';
 import {
 	cambioTexto,
-	consumoTexto,
 	kmTexto,
 	nombreCorto,
 	portada,
@@ -25,7 +24,7 @@ const { contado, financiado } = precios(data);
 const especificaciones = [
 	[kmTexto(data.mileage_km), data.first_registration],
 	[potenciaTexto(data) ?? '—', cambioTexto(data.transmission)],
-	[consumoTexto(coche.body) ?? '—', data.fuel],
+	[data.body_type ?? '—', data.fuel],
 ];
 ---
 

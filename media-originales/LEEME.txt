@@ -1,0 +1,9 @@
+Originales sin comprimir. Esta carpeta NO se publica: solo se sirve lo que hay
+en public/, así que aquí se guarda la foto tal cual salió de la cámara y en
+public/media/ va la versión ligera que descarga el visitante.
+
+hero.jpg  4032x3024, 2 MB  ->  public/media/hero.webp (1920px, 194 KB)
+                              public/media/hero-1024.webp (1024px, 63 KB)
+
+Para regenerarlas tras cambiar la foto:
+  node -e "import('sharp').then(({default:s})=>{s('media-originales/hero.jpg').rotate().resize({width:1920}).webp({quality:74,effort:6}).toFile('public/media/hero.webp');s('media-originales/hero.jpg').rotate().resize({width:1024}).webp({quality:72,effort:6}).toFile('public/media/hero-1024.webp')})"

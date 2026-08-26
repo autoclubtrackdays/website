@@ -1,0 +1,56 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
+import VendidoCard from '../components/VendidoCard.astro';
+
+// Los últimos primero: lo recién vendido es lo que interesa enseñar.
+const vendidos = (await getCollection('vendidos')).sort(
+	(a, b) => b.data.price_eur - a.data.price_eur,
+);
+---
+
+<Layout
+	title="Ventas recientes – Autoclub Trackdays"
+	description="Coches que hemos vendido recientemente en Autoclub Trackdays."
+>
+	<section class="mx-auto max-w-6xl px-6 py-16">
+		<div class="flex flex-wrap items-baseline justify-between gap-4">
+			<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
+				Ventas recientes
+			</h1>
+
+			<a
+				href="/catalogo"
+				class="inline-flex items-center gap-3 border-b-2 border-(--accent) pb-1 text-xl font-semibold tracking-wide text-black uppercase transition hover:-translate-x-3"
+			>
+				<svg
+					viewBox="0 0 20 20"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					class="h-5 w-5"
+					aria-hidden="true"
+				>
+					<path d="M16 10H4m0 0 4-4m-4 4 4 4"></path>
+				</svg>
+				Volver a catálogo
+			</a>
+		</div>
+
+		<span class="mt-3 block h-1 w-16 bg-(--accent)"></span>
+
+		<div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+			{vendidos.map((coche) => <VendidoCard coche={coche} />)}
+		</div>
+
+		{
+			vendidos.length === 0 && (
+				<p class="mt-16 text-center text-lg text-gray-500">
+					Todavía no hay ventas que mostrar.
+				</p>
+			)
+		}
+	</section>
+</Layout>

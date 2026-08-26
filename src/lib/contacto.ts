@@ -16,6 +16,3 @@ export const REDES = [
 
 /** Enlace al mapa incrustado. No necesita clave de API. */
 export const MAPA_EMBED = `https://www.google.com/maps?q=${encodeURIComponent(CONTACTO.direccion)}&output=embed`;
-
-/** Enlace para abrir la ficha en Google Maps y tirar de navegador. */
-export const MAPA_ENLACE = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(CONTACTO.direccion)}`;

@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import DestacadoCard from '../components/DestacadoCard.astro';
 import { DESTACADOS } from '../lib/destacados';
-import { CONTACTO, MAPA_EMBED, MAPA_ENLACE, WHATSAPP_ENLACE } from '../lib/contacto';
+import { CONTACTO, MAPA_EMBED, WHATSAPP_ENLACE } from '../lib/contacto';
 
 const coches = await getCollection('coches');
 
@@ -15,16 +15,73 @@ const destacados = DESTACADOS.map((id) => {
 
 // Las marcas salen del propio stock, sin lista escrita a mano.
 const marcas = [...new Set(coches.map((coche) => coche.data.make))].sort();
+
+const titulo = 'Autoclub Trackdays | Compraventa de coches en Madrid';
+const descripcion =
+	'Compraventa de coches en Madrid desde hace más de 25 años. Deportivos, clásicos y utilitarios revisados, con garantía y financiación. Isla de Sumatra Nº 36, 28034 Madrid. Tel. 649 96 31 31.';
+
+/**
+ * Ficha del negocio para Google, en el formato que entiende: de aquí salen el
+ * horario, el teléfono y la dirección que aparecen en el resultado de búsqueda
+ * y en Maps, sin que Google tenga que adivinarlos leyendo la página.
+ *
+ * Solo se declara lo que es cierto y comprobable. En cuanto haya perfil de
+ * Instagram, su dirección va en `sameAs`: es como Google ata la web al perfil.
+ */
+const negocio = {
+	'@context': 'https://schema.org',
+	'@type': 'AutoDealer',
+	'@id': new URL('#negocio', Astro.site).href,
+	name: 'Autoclub Trackdays',
+	description: descripcion,
+	url: Astro.site?.href,
+	logo: new URL('/media/autoclub-3a-favicon-512.png', Astro.site).href,
+	image: new URL('/media/og.jpg', Astro.site).href,
+	telephone: CONTACTO.telefono.tel,
+	priceRange: '€€',
+	currenciesAccepted: 'EUR',
+	address: {
+		'@type': 'PostalAddress',
+		streetAddress: 'Isla de Sumatra Nº 36',
+		postalCode: '28034',
+		addressLocality: 'Madrid',
+		addressRegion: 'Madrid',
+		addressCountry: 'ES',
+	},
+	areaServed: { '@type': 'AdministrativeArea', name: 'Comunidad de Madrid' },
+	openingHoursSpecification: [
+		{
+			'@type': 'OpeningHoursSpecification',
+			dayOfWeek: [
+				'Monday',
+				'Tuesday',
+				'Wednesday',
+				'Thursday',
+				'Friday',
+				'Saturday',
+				'Sunday',
+			],
+			opens: '08:00',
+			closes: '21:00',
+		},
+	],
+	// Las marcas salen del stock real, así que la lista se actualiza sola.
+	brand: marcas.map((marca) => ({ '@type': 'Brand', name: marca })),
+};
 ---
 
-<Layout title="AutoClub Trackdays">
-	<!-- Foto de ejemplo (Unsplash, 1920x800). Sustituir por una propia. -->
+<Layout title={titulo} description={descripcion}>
+	<!-- La foto del hero es lo más grande que se descarga y es el fondo de un
+	     div, así que el navegador no la ve hasta tener el CSS. Con el preload
+	     empieza a bajarla a la vez que la hoja de estilos. -->
+	<Fragment slot="cabeza">
+		<link rel="preload" as="image" href="/media/hero-1024.webp" media="(max-width: 767px)" />
+		<link rel="preload" as="image" href="/media/hero.webp" media="(min-width: 768px)" />
+		<script type="application/ld+json" set:html={JSON.stringify(negocio)} is:inline />
+	</Fragment>
+
 	<section class="relative flex min-h-140 items-end overflow-hidden bg-black lg:aspect-12/5 lg:min-h-0">
-		<div
-			class="acercar absolute inset-0 bg-gray-900 bg-cover bg-center"
-			style="background-image: url('/hero.jpg')"
-		>
-		</div>
+		<div class="hero-foto acercar absolute inset-0 bg-gray-900 bg-cover bg-center"></div>
 
 		<!-- Degradado en lugar de velo plano: la foto se ve arriba y el texto
 		     apoya sobre negro abajo, que es donde tiene que leerse. -->

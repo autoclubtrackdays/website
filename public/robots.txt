@@ -1,0 +1,6 @@
+# Se puede rastrear todo: no hay ninguna zona privada publicada. El panel de
+# administración vive en src/dashboard/ y Astro no lo publica.
+User-agent: *
+Allow: /
+
+Sitemap: https://autoclubtrackdays.com/sitemap.xml

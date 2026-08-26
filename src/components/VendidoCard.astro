@@ -1,0 +1,30 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { nombreCorto, portada } from '../lib/coches';
+
+interface Props {
+	coche: CollectionEntry<'vendidos'>;
+}
+
+const { coche } = Astro.props;
+const { data } = coche;
+---
+
+<!-- Un div, no un enlace: estos coches ya no están a la venta y no hay nada que
+     consultar, así que la tarjeta no promete un clic que no lleva a ninguna parte.
+     Tampoco lleva precio ni ficha: solo enseña qué se ha vendido. -->
+<div class="flex flex-col overflow-hidden border border-gray-200 bg-white">
+	<img
+		src={portada(coche)}
+		alt={data.title}
+		width="640"
+		height="480"
+		loading="lazy"
+		class="aspect-4/3 w-full object-cover"
+	/>
+
+	<div class="p-5">
+		<h3 class="text-xl font-semibold text-gray-900">{nombreCorto(data)}</h3>
+		<p class="mt-0.5 text-lg text-gray-600">{data.variant}</p>
+	</div>
+</div>

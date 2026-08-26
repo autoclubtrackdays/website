@@ -110,9 +110,28 @@ const comentarios = (coche.body ?? '')
 const mensajeWhatsapp = encodeURIComponent(
 	`Hola, me interesa el ${nombre} ${data.variant} (ref. ${data.reference}).`,
 );
+
+// Descripción propia por coche: si todas las fichas compartieran la del sitio,
+// Google las vería como veinte copias de la misma página. Se queda por debajo
+// de los 160 caracteres que muestra el buscador.
+const descripcion = [
+	`${nombre} ${data.variant}`,
+	data.first_registration,
+	kmTexto(data.mileage_km),
+	potenciaTexto(data),
+	cambioTexto(data.transmission),
+	vendido ? 'Vendido' : `${precioTexto(contado)} en Autoclub Trackdays, Madrid`,
+]
+	.filter(Boolean)
+	.join(' · ');
 ---
 
-<Layout title={`${nombre} ${data.variant} – Autoclub Trackdays`}>
+<Layout
+	title={`${nombre} ${data.variant} – Autoclub Trackdays`}
+	description={descripcion}
+	image={galeria[0]}
+	noindex={vendido}
+>
 	<section class="mx-auto max-w-6xl px-6 py-10">
 		<nav aria-label="Migas" class="flex items-center gap-3 text-base text-gray-500">
 			<a
