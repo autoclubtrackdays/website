@@ -24,6 +24,7 @@ export const GET: APIRoute = async ({ site }) => {
 		['/compramos-tu-coche', '0.7'],
 		['/pedidos-custom', '0.7'],
 		['/vendidos', '0.4'],
+		['/aviso-legal', '0.2'],
 	];
 
 	// Con barra al final: sin ella el servidor responde una redirección y Google

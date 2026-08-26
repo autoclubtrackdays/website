@@ -3,7 +3,15 @@ import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import DestacadoCard from '../components/DestacadoCard.astro';
 import { DESTACADOS } from '../lib/destacados';
-import { CONTACTO, MAPA_EMBED, WHATSAPP_ENLACE } from '../lib/contacto';
+import {
+	CONTACTO,
+	COORDENADAS,
+	EMPRESA,
+	MAPA_EMBED,
+	MAPA_ENLACE,
+	MISMO_QUE,
+	WHATSAPP_ENLACE,
+} from '../lib/contacto';
 
 const coches = await getCollection('coches');
 
@@ -25,8 +33,7 @@ const descripcion =
  * horario, el teléfono y la dirección que aparecen en el resultado de búsqueda
  * y en Maps, sin que Google tenga que adivinarlos leyendo la página.
  *
- * Solo se declara lo que es cierto y comprobable. En cuanto haya perfil de
- * Instagram, su dirección va en `sameAs`: es como Google ata la web al perfil.
+ * Solo se declara lo que es cierto y comprobable.
  */
 const negocio = {
 	'@context': 'https://schema.org',
@@ -40,6 +47,16 @@ const negocio = {
 	telephone: CONTACTO.telefono.tel,
 	priceRange: '€€',
 	currenciesAccepted: 'EUR',
+
+	// El CIF es lo que ata esta web a la sociedad que ya figura en el registro
+	// mercantil, y de ahí en Iberinform, eInforma y demás. Sin él, para Google
+	// son dos cosas distintas que casualmente se llaman igual.
+	taxID: EMPRESA.cif,
+	legalName: EMPRESA.razonSocial,
+
+	// Las direcciones de los perfiles donde ya se vende. Es la propiedad con la
+	// que Google une la web a cada uno de ellos.
+	...(MISMO_QUE.length > 0 && { sameAs: MISMO_QUE }),
 	address: {
 		'@type': 'PostalAddress',
 		streetAddress: 'Isla de Sumatra Nº 36',
@@ -48,6 +65,12 @@ const negocio = {
 		addressRegion: 'Madrid',
 		addressCountry: 'ES',
 	},
+	geo: {
+		'@type': 'GeoCoordinates',
+		latitude: COORDENADAS.latitud,
+		longitude: COORDENADAS.longitud,
+	},
+	hasMap: MAPA_ENLACE,
 	areaServed: { '@type': 'AdministrativeArea', name: 'Comunidad de Madrid' },
 	openingHoursSpecification: [
 		{

@@ -9,6 +9,7 @@ import {
 	kmTexto,
 	nombreCorto,
 	nombreCompleto,
+	rutaCoche,
 	potenciaTexto,
 	precios,
 	precioTexto,
@@ -130,6 +131,94 @@ const descripcion = [
 ]
 	.filter(Boolean)
 	.join(' · ');
+
+// --- Datos estructurados ----------------------------------------------------
+//
+// El tipo `Car` es a la vez `Vehicle` y `Product`, que es lo que permite que
+// Google enseñe el precio y la foto en el resultado en vez de una línea de
+// texto. Todo sale de los campos que ya tiene el .txt: lo que el coche no
+// declare, simplemente no se emite.
+
+const urlCoche = new URL(`${rutaCoche(data)}/`, Astro.site).href;
+
+/** Solo pone la clave si hay valor: schema.org prefiere que falte una propiedad
+ *  a que llegue vacía o a cero. */
+const si = (valor: unknown, contenido: object) => (valor ? contenido : {});
+
+const esquemaCoche = {
+	'@context': 'https://schema.org',
+	'@type': 'Car',
+	'@id': `${urlCoche}#coche`,
+	name: nombreCompleto(data),
+	description: descripcion,
+	url: urlCoche,
+	image: galeria,
+	brand: { '@type': 'Brand', name: data.make },
+	itemCondition: 'https://schema.org/UsedCondition',
+	sku: String(data.reference ?? ''),
+
+	...si(data.model, { model: data.model }),
+	...si(data.variant, { vehicleConfiguration: data.variant }),
+	...si(data.body_type, { bodyType: data.body_type }),
+	...si(data.color, { color: data.color }),
+	...si(data.doors, { numberOfDoors: data.doors }),
+	...si(data.seats, { seatingCapacity: data.seats }),
+	...si(data.drivetrain, { driveWheelConfiguration: data.drivetrain }),
+	...si(data.fuel, { fuelType: data.fuel }),
+	...si(data.transmission, { vehicleTransmission: cambioTexto(data.transmission) }),
+
+	// De la fecha solo se declara el año: el .txt guarda MM/AAAA y
+	// `vehicleModelDate` espera una fecha, no un mes suelto.
+	...si(data.first_registration, {
+		vehicleModelDate: data.first_registration.split('/')[1],
+	}),
+
+	mileageFromOdometer: {
+		'@type': 'QuantitativeValue',
+		value: data.mileage_km,
+		unitCode: 'KMT',
+	},
+
+	// En kW y cm³ porque son las unidades que entiende el vocabulario; los CV
+	// se siguen viendo en la ficha de la página.
+	...si(data.power_kw || data.displacement_cc, {
+		vehicleEngine: {
+			'@type': 'EngineSpecification',
+			...si(data.power_kw, {
+				enginePower: { '@type': 'QuantitativeValue', value: data.power_kw, unitCode: 'KWT' },
+			}),
+			...si(data.displacement_cc, {
+				engineDisplacement: {
+					'@type': 'QuantitativeValue',
+					value: data.displacement_cc,
+					unitCode: 'CMQ',
+				},
+			}),
+		},
+	}),
+
+	offers: {
+		'@type': 'Offer',
+		url: urlCoche,
+		price: contado,
+		priceCurrency: 'EUR',
+		itemCondition: 'https://schema.org/UsedCondition',
+		availability: vendido ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+		// Apunta a la ficha del negocio de la portada en vez de repetirla.
+		seller: { '@id': new URL('#negocio', Astro.site).href },
+	},
+};
+
+/** La ruta que Google enseña bajo el título, en lugar de la URL cruda. */
+const esquemaMigas = {
+	'@context': 'https://schema.org',
+	'@type': 'BreadcrumbList',
+	itemListElement: [
+		{ '@type': 'ListItem', position: 1, name: 'Inicio', item: Astro.site?.href },
+		{ '@type': 'ListItem', position: 2, name: 'Catálogo', item: new URL('/catalogo/', Astro.site).href },
+		{ '@type': 'ListItem', position: 3, name: nombreCompleto(data) },
+	],
+};
 ---
 
 <Layout
@@ -138,6 +227,11 @@ const descripcion = [
 	image={galeria[0]}
 	noindex={vendido}
 >
+	<Fragment slot="cabeza">
+		<script type="application/ld+json" set:html={JSON.stringify(esquemaCoche)} is:inline />
+		<script type="application/ld+json" set:html={JSON.stringify(esquemaMigas)} is:inline />
+	</Fragment>
+
 	<section class="mx-auto max-w-6xl px-6 py-10">
 		<nav aria-label="Migas" class="flex items-center gap-3 text-base text-gray-500">
 			<a

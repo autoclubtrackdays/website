@@ -1,0 +1,128 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { CONTACTO, EMPRESA, WHATSAPP_ENLACE } from '../lib/contacto';
+
+// Los datos de la sociedad viven en contacto.ts, no aquí: el CIF y el domicilio
+// social también los usa la ficha de negocio de la portada, y tenerlos en dos
+// sitios es la forma segura de que un día dejen de coincidir.
+const datos = [
+	{ campo: 'Titular', valor: EMPRESA.razonSocial },
+	{ campo: 'CIF', valor: EMPRESA.cif },
+	{ campo: 'Domicilio social', valor: EMPRESA.domicilioSocial },
+	{ campo: 'Establecimiento', valor: CONTACTO.direccion },
+	{ campo: 'Teléfono', valor: CONTACTO.telefono.texto },
+	{ campo: 'Actividad', valor: 'Compraventa de vehículos de ocasión' },
+];
+---
+
+<Layout
+	title="Aviso legal – Autoclub Trackdays"
+	description="Datos identificativos de Autoclub Trackdays S.L., condiciones de uso de la web y tratamiento de datos."
+>
+	<section class="mx-auto max-w-3xl px-6 py-16">
+		<h1 class="text-4xl font-semibold tracking-tight text-gray-900 uppercase sm:text-5xl">
+			Aviso legal
+		</h1>
+		<span class="mt-3 block h-1 w-16 bg-(--accent)"></span>
+
+		<h2 class="mt-14 text-lg font-semibold tracking-wide text-gray-900 uppercase">
+			Datos identificativos
+		</h2>
+		<span class="mt-2 block h-0.5 w-12 bg-(--accent)"></span>
+
+		<dl class="mt-6 divide-y divide-gray-200 border-y border-gray-200 text-base">
+			{
+				datos.map((dato) => (
+					<div class="flex flex-wrap justify-between gap-x-8 gap-y-1 py-3">
+						<dt class="text-gray-500">{dato.campo}</dt>
+						<dd class="text-right font-medium text-gray-900">{dato.valor}</dd>
+					</div>
+				))
+			}
+		</dl>
+
+		<p class="mt-6 text-gray-600">
+			El domicilio social es el que consta en el Registro Mercantil. La atención al público se
+			presta en el establecimiento, en {CONTACTO.direccion}, {CONTACTO.horario.toLowerCase()}.
+		</p>
+
+		<h2 class="mt-14 text-lg font-semibold tracking-wide text-gray-900 uppercase">
+			Condiciones de uso
+		</h2>
+		<span class="mt-2 block h-0.5 w-12 bg-(--accent)"></span>
+
+		<div class="mt-6 flex flex-col gap-4 text-gray-600">
+			<p>
+				Esta web es un escaparate de los vehículos disponibles. Los precios, las
+				características y la disponibilidad de cada coche se publican de buena fe y pueden
+				cambiar sin previo aviso, así que no constituyen una oferta contractual: la
+				operación se cierra en el establecimiento, con el vehículo a la vista.
+			</p>
+
+			<p>
+				Las fotografías corresponden a la unidad concreta que se anuncia. Si detectas un
+				error en cualquier ficha, escríbenos y lo corregimos.
+			</p>
+		</div>
+
+		<h2 class="mt-14 text-lg font-semibold tracking-wide text-gray-900 uppercase">
+			Datos personales y cookies
+		</h2>
+		<span class="mt-2 block h-0.5 w-12 bg-(--accent)"></span>
+
+		<div class="mt-6 flex flex-col gap-4 text-gray-600">
+			<p>
+				Esta web no tiene formularios ni área de usuario y no recoge datos personales por sí
+				misma. El contacto se hace por teléfono o por WhatsApp, y en ese caso los datos que
+				nos facilites se usan únicamente para atender tu consulta sobre un vehículo.
+			</p>
+
+			<p>
+				La web tampoco usa cookies propias ni herramientas de analítica. La sección de
+				contacto incrusta un mapa de Google Maps, y ese contenido de terceros sí puede
+				instalar cookies propias de Google al cargarse, conforme a su
+				<a
+					href="https://policies.google.com/privacy"
+					target="_blank"
+					rel="noopener"
+					class="border-b-2 border-(--accent) font-medium text-gray-900 transition hover:text-black"
+				>
+					política de privacidad
+				</a>.
+			</p>
+
+			<p>
+				Para ejercer tus derechos de acceso, rectificación o supresión, o para cualquier
+				cuestión relacionada con tus datos, puedes escribirnos por
+				<a
+					href={WHATSAPP_ENLACE}
+					target="_blank"
+					rel="noopener"
+					class="border-b-2 border-(--accent) font-medium text-gray-900 transition hover:text-black"
+				>
+					WhatsApp
+				</a>
+				o llamarnos al {CONTACTO.telefono.texto}.
+			</p>
+		</div>
+
+		<a
+			href="/catalogo"
+			class="mt-14 inline-flex items-center gap-3 border-b-2 border-(--accent) pb-1 text-base font-semibold tracking-wide text-black uppercase transition hover:-translate-x-3"
+		>
+			<svg
+				viewBox="0 0 20 20"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				class="h-5 w-5"
+				aria-hidden="true"
+			>
+				<path d="M16 10H4m0 0 4-4m-4 4 4 4"></path>
+			</svg>
+			Volver al catálogo
+		</a>
+	</section>
+</Layout>
