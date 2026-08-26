@@ -3,6 +3,7 @@ Marca: Volvo
 Modelo: XC90
 Version: D5 Inscription AWD 235 Aut.
 Precio: 25900
+Precio financiado: 25800
 Kilometros: 144000
 Fecha: 11/2016
 Combustible: Diésel

@@ -3,6 +3,7 @@ Marca: Land Rover
 Modelo: Discovery
 Version: 3.0 SDV6 255 CV HSE 7 plazas
 Precio: 6900
+Precio financiado: 5800
 Kilometros: 243000
 Fecha: 08/2012
 Combustible: Diésel

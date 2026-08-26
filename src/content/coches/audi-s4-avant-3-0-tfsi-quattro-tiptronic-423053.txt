@@ -3,6 +3,7 @@ Marca: Audi
 Modelo: S4
 Version: Avant 3.0 TFSI quattro tiptronic
 Precio: 35490
+Precio financiado: 34800
 Kilometros: 123000
 Fecha: 06/2018
 Combustible: Gasolina

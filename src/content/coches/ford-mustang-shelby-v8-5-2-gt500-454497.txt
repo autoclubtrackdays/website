@@ -3,6 +3,7 @@ Marca: Ford
 Modelo: Mustang
 Version: Shelby V8 5.2 GT500
 Precio: 127900
+Precio financiado: 127400
 Kilometros: 7000
 Fecha: 09/2021
 Combustible: Gasolina

@@ -3,6 +3,7 @@ Marca: MINI
 Modelo: One
 Version: 3 Door
 Precio: 3400
+Precio financiado: 3300
 Kilometros: 297000
 Fecha: 07/2003
 Combustible: Gasolina

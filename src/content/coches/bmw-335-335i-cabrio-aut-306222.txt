@@ -3,6 +3,7 @@ Marca: BMW
 Modelo: 335
 Version: 335i Cabrio Aut.
 Precio: 17900
+Precio financiado: 17800
 Kilometros: 201000
 Fecha: 05/2007
 Combustible: Gasolina

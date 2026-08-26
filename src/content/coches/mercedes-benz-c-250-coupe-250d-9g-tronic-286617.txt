@@ -3,6 +3,7 @@ Marca: Mercedes-Benz
 Modelo: C 250
 Version: Coupé 250d 9G-Tronic
 Precio: 29900
+Precio financiado: 29800
 Kilometros: 269000
 Fecha: 09/2016
 Combustible: Diésel

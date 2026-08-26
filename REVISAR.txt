@@ -14,6 +14,16 @@ Diferencias entre Wallapop y AutoScout (se ha usado el dato de AutoScout salvo e
   Mercedes C250 d coupe Brabus/CRS 2016: kilómetros 25.353 en Wallapop contra 269.000 en AutoScout
   MINI 1000 Special histórico 45 cvs: precio 11.000 € en Wallapop contra 11.900 € en AutoScout
 
+Precio financiado (26/08/2026): solo se ha puesto donde el anuncio de AutoScout publica los dos precios, el de portada (financiado) y el 'Precio al contado' aparte. Es el numero publicado, no una cuenta.
+  Sin financiado, porque el anuncio solo trae un precio: BMW 325ti, Citroen Berlingo, Mitsubishi Montero
+  Sin financiado, porque no hay anuncio de AutoScout: Mitt 125, Pontiac, Studebaker
+  MINI 1000: el de AutoScout (11.900 €) sale mas caro que el contado, asi que no puede ser el financiado; se han puesto 10.900 €, cien euros por debajo del precio de Wallapop
+  OJO, los cuatro de abajo mezclan fuentes: el contado es el de Wallapop y el financiado el de AutoScout, asi que la diferencia no son los 100 € de la casa sino la que hay entre los dos anuncios. Hay que decidir que precio vale.
+    Audi S4: 35.490 € al contado contra 34.800 € financiado, 690 € de diferencia
+    Ford Shelby: 127.900 € al contado contra 127.400 € financiado, 500 € de diferencia
+    Land Rover Discovery: 6.900 € al contado contra 5.800 € financiado, 1.100 € de diferencia
+    Mazda 3: 18.900 € al contado contra 18.400 € financiado, 500 € de diferencia
+
 Pendientes de la web (no son datos de coches):
   Instagram — en src/lib/contacto.ts la direccion es '#': el icono del footer no lleva a ningun sitio, y es lo que le falta a Google para atar la web al perfil
   Footer — el enlace 'Privacidad y Terminos' apunta a '#' y esas paginas no existen; el aviso legal es obligatorio para una empresa

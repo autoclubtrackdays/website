@@ -3,6 +3,7 @@ Marca: Ford
 Modelo: Mustang
 Version: 3.7 Ti-VCT V6 Cabrio Aut.
 Precio: 28900
+Precio financiado: 28800
 Kilometros: 59580
 Fecha: 11/2015
 Combustible: Gasolina

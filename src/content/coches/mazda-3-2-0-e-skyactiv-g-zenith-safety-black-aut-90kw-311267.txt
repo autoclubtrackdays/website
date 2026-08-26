@@ -3,6 +3,7 @@ Marca: Mazda
 Modelo: 3
 Version: 2.0 e-Skyactiv-G Zenith Safety Black Aut. 90kW
 Precio: 18900
+Precio financiado: 18400
 Kilometros: 121400
 Fecha: 10/2020
 Combustible: Gasolina

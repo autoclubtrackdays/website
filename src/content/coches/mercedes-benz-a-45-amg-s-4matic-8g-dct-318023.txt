@@ -3,6 +3,7 @@ Marca: Mercedes-Benz
 Modelo: A 45 AMG
 Version: S 4Matic+ 8G-DCT
 Precio: 49900
+Precio financiado: 49800
 Kilometros: 84941
 Fecha: 05/2021
 Combustible: Gasolina
