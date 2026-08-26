@@ -1,0 +1,27 @@
+Referencia: 103543
+Marca: Audi
+Modelo: A4
+Version: Avant 2.0 TDI
+Precio: 19500
+Precio financiado: 19400
+Kilometros: 114000
+Fecha: 09/2018
+Combustible: Diésel
+Cambio: Manual
+Potencia CV: 190
+Cilindrada: 2000
+Carroceria: Familiar
+Puertas: 5
+Plazas: 5
+Traccion: Cuatro ruedas
+Color: Azul
+Pintura: Metalizado
+Accidentes: No
+Libro de mantenimiento: Sí
+ITV nueva: Sí
+Fumador: No
+Garantia: 12 meses
+Fotos: 01,02,03,04,05,06,07,08,09,10
+
+Comentario:
+Audi drive select con regulación de suspensión, techo de cristal eléctrico, azul metalizado, asientos deportivos y calefactables, control de crucero con función de freno, llantas de aleación, portón trasero eléctrico, luces automáticas, limpiaparabrisas automático, climatizador, retrovisores eléctricos, faros y pilotos LED con función progresiva, navegación MMI, interfaz USB,Audi Pre sense basic, asistencia de estacionamiento delantera y trasera acústica, óptica con pantalla selectiva APS Plus, sistema manos libres y varios extras mas. Transferido y con un año de garantía. IVA deducible.
