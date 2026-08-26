@@ -8,6 +8,15 @@ const servicios = [
 	{ titulo: 'Compramos tu coche', href: '/compramos-tu-coche' },
 	{ titulo: 'Pedidos custom', href: '/pedidos-custom' },
 ];
+
+// En el móvil los servicios salen sueltos, sin el desplegable ni el título:
+// meter un submenú dentro de un menú que ya se ha abierto es un paso de más
+// para llegar a tres páginas.
+const enlacesMovil = [
+	{ titulo: 'Catálogo', href: '/catalogo' },
+	...servicios,
+	{ titulo: 'Contacto', href: '/#contacto' },
+];
 ---
 
 <header class="sticky top-0 z-50 border-b border-white/10 bg-black/90 backdrop-blur">
@@ -26,7 +35,30 @@ const servicios = [
 			/>
 		</a>
 
-		<nav aria-label="Principal">
+		<!-- Hamburguesa: solo en móvil, donde el menú entero no cabe en la barra. -->
+		<button
+			type="button"
+			data-hamburguesa
+			aria-controls="menu-movil"
+			aria-expanded="false"
+			class="-mr-2 grid h-11 w-11 place-items-center text-gray-300 transition hover:text-white md:hidden"
+		>
+			<span class="sr-only">Abrir el menú</span>
+			<svg
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				class="h-6 w-6"
+				aria-hidden="true"
+			>
+				<path data-icono="abrir" d="M4 7h16M4 12h16M4 17h16"></path>
+				<path data-icono="cerrar" class="hidden" d="m6 6 12 12M18 6 6 18"></path>
+			</svg>
+		</button>
+
+		<nav aria-label="Principal" class="hidden md:block">
 			<ul class="flex items-baseline gap-8">
 				<li>
 					<a
@@ -102,9 +134,70 @@ const servicios = [
 			</ul>
 		</nav>
 	</div>
+
+	<div id="menu-movil" hidden class="border-t border-white/10 bg-black/95 md:hidden">
+		<ul class="mx-auto flex max-w-6xl flex-col px-6 pb-6">
+			{
+				enlacesMovil.map((enlace) => (
+					<li class="border-b border-white/10">
+						<a
+							href={enlace.href}
+							class="block py-4 text-base font-medium tracking-wide text-gray-300 uppercase transition hover:text-white"
+						>
+							{enlace.titulo}
+						</a>
+					</li>
+				))
+			}
+
+			<li class="pt-6">
+				<a
+					href={`tel:${CONTACTO.telefono.tel}`}
+					class="block rounded-sm bg-(--accent) px-4 py-4 text-center text-base font-semibold text-black"
+				>
+					Llamar {CONTACTO.telefono.texto}
+				</a>
+			</li>
+		</ul>
+	</div>
 </header>
 
 <script>
+	// Menú de móvil.
+	const hamburguesa = document.querySelector<HTMLButtonElement>('[data-hamburguesa]');
+	const menuMovil = document.getElementById('menu-movil');
+
+	if (hamburguesa && menuMovil) {
+		const abrirMovil = (mostrar: boolean) => {
+			menuMovil.hidden = !mostrar;
+			hamburguesa.setAttribute('aria-expanded', String(mostrar));
+
+			hamburguesa
+				.querySelectorAll<SVGElement>('[data-icono]')
+				.forEach((icono) =>
+					icono.classList.toggle('hidden', icono.dataset.icono !== (mostrar ? 'cerrar' : 'abrir')),
+				);
+		};
+
+		hamburguesa.addEventListener('click', () => abrirMovil(menuMovil.hidden !== false));
+
+		// Al pulsar un enlace se cierra: si no, el menú tapa la página a la que
+		// acabas de saltar, y con #contacto ni siquiera cambia de página.
+		menuMovil.addEventListener('click', (evento) => {
+			if ((evento.target as HTMLElement).closest('a')) abrirMovil(false);
+		});
+
+		document.addEventListener('keydown', (evento) => {
+			if (evento.key === 'Escape') abrirMovil(false);
+		});
+
+		// Si se gira el móvil o se ensancha la ventana, el menú deja de verse pero
+		// seguiría abierto por debajo, y reaparecería al volver a estrechar.
+		window
+			.matchMedia('(min-width: 768px)')
+			.addEventListener('change', (evento) => evento.matches && abrirMovil(false));
+	}
+
 	// Menú de servicios. Se abre al pasar por encima, y también con clic: en
 	// pantalla táctil no hay hover que valga.
 	const menu = document.querySelector<HTMLElement>('[data-menu]');

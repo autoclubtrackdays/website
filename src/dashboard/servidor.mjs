@@ -8,7 +8,7 @@
  */
 import { createServer } from 'node:http';
 import { execFile } from 'node:child_process';
-import { readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -442,8 +442,41 @@ async function actualizarCoche(peticion, respuesta, id) {
 }
 
 /** Mueve el coche a vendidos. Las fotos se quedan: su ficha sigue publicada. */
+/** Escribe o quita la línea `Vendido:` sin tocar nada más del archivo.
+ *
+ *  Se edita el texto a mano en vez de volver a generarlo con `generarTxt`:
+ *  regenerar pasa el archivo entero por el parser y cualquier campo que este no
+ *  reconozca se perdería por el camino. */
+function conFechaDeVenta(texto, fecha) {
+	const limpio = texto.replace(/^Vendido:.*\n?/m, '');
+	if (!fecha) return limpio;
+
+	const corte = limpio.search(/^Comentario:/m);
+	const linea = `Vendido: ${fecha}`;
+
+	return corte === -1
+		? `${limpio.trimEnd()}\n${linea}\n`
+		: `${limpio.slice(0, corte).trimEnd()}\n${linea}\n\n${limpio.slice(corte)}`;
+}
+
+const hoyEnEspanol = () => {
+	const hoy = new Date();
+	return [
+		String(hoy.getDate()).padStart(2, '0'),
+		String(hoy.getMonth() + 1).padStart(2, '0'),
+		hoy.getFullYear(),
+	].join('/');
+};
+
 async function marcarVendido(respuesta, id) {
-	await rename(join(COCHES, `${id}.txt`), join(VENDIDOS, `${id}.txt`));
+	const origen = join(COCHES, `${id}.txt`);
+
+	// Se sella la fecha: es lo que ordena la página de vendidos, los últimos
+	// arriba. Sin ella el coche se iría al final de la lista.
+	const texto = await readFile(origen, 'utf8');
+	await writeFile(join(VENDIDOS, `${id}.txt`), conFechaDeVenta(texto, hoyEnEspanol()), 'utf8');
+	await rm(origen);
+
 	await quitarDeDestacados(id);
 
 	json(respuesta, 200, { vendido: true, id });
@@ -453,7 +486,12 @@ async function marcarVendido(respuesta, id) {
  *  marcó vendido por error. Las fotos nunca se movieron, así que no hay nada
  *  que reponer en R2. */
 async function devolverAlCatalogo(respuesta, id) {
-	await rename(join(VENDIDOS, `${id}.txt`), join(COCHES, `${id}.txt`));
+	const origen = join(VENDIDOS, `${id}.txt`);
+
+	// Se le quita la fecha de venta: vuelve a estar a la venta.
+	const texto = await readFile(origen, 'utf8');
+	await writeFile(join(COCHES, `${id}.txt`), conFechaDeVenta(texto, null), 'utf8');
+	await rm(origen);
 
 	json(respuesta, 200, { devuelto: true, id });
 }

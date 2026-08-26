@@ -163,8 +163,16 @@ const descripcion = [
 			<span class="text-gray-900">{nombre}</span>
 		</nav>
 
+		<!-- En el móvil va todo en una columna y en este orden: fotos, nombre y
+		     precio, y por último la ficha. En pantalla grande la ficha vuelve
+		     debajo de las fotos y el bloque de precio se va a la derecha, donde
+		     acompaña al scroll.
+
+		     El `min-w-0` no es adorno: sin él la columna se estira hasta el ancho
+		     de la tira de miniaturas —2.900 px con 27 fotos— y la foto principal,
+		     que es `w-full`, se estira con ella. -->
 		<div class="mt-8 grid gap-10 lg:grid-cols-5 lg:items-start">
-			<div class="lg:col-span-3">
+			<div class="min-w-0 lg:col-span-3 lg:col-start-1 lg:row-start-1">
 				<div class="relative overflow-hidden rounded-sm border border-gray-200 bg-gray-100">
 					<button
 						type="button"
@@ -395,72 +403,34 @@ const descripcion = [
 						</div>
 					</div>
 				</dialog>
-
-				<div class="mt-14 flex flex-col gap-12 border-t border-gray-200 pt-12">
-					{
-						bloques.map((seccion) => (
-							<section>
-								<h2 class="text-lg font-semibold tracking-wide text-gray-900 uppercase">
-									{seccion.titulo}
-								</h2>
-								<span class="mt-2 block h-0.5 w-12 bg-(--accent)" />
-
-								{seccion.filas.length > 0 && (
-									<dl class="mt-5 grid gap-x-12 sm:grid-cols-2">
-										{seccion.filas.map((fila) => (
-											<div class="flex justify-between gap-4 border-b border-gray-100 py-2 text-base">
-												<dt class="text-gray-500">{fila.campo}</dt>
-												<dd class="text-right font-medium text-gray-900">{fila.valor}</dd>
-											</div>
-										))}
-									</dl>
-								)}
-
-							</section>
-						))
-					}
-
-					{
-						comentarios.length > 0 && (
-							<section>
-								<h2 class="text-lg font-semibold tracking-wide text-gray-900 uppercase">
-									Comentarios
-								</h2>
-								<span class="mt-2 block h-0.5 w-12 bg-(--accent)" />
-
-								<div class="mt-5 flex flex-col gap-3 text-base leading-relaxed text-gray-600">
-									{comentarios.map((parrafo) => (
-										<p>{parrafo}</p>
-									))}
-								</div>
-							</section>
-						)
-					}
-				</div>
 			</div>
 
-			<div class="lg:col-span-2 lg:sticky lg:top-24">
+			<div
+				class="min-w-0 lg:col-span-2 lg:col-start-4 lg:row-span-2 lg:row-start-1 lg:sticky lg:top-24"
+			>
 				<div>
 					<h1 class="text-4xl font-semibold tracking-tight text-gray-900">{nombre}</h1>
 					{data.variant && <p class="mt-1 text-xl text-gray-600">{data.variant}</p>}
 
-					<div class="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-gray-200 pt-6">
+					<div class="mt-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 border-t border-gray-200 pt-6 sm:gap-x-8">
 						<div>
-							<p class="text-base tracking-wide text-gray-500 uppercase">Al contado</p>
-							<p class="text-5xl font-bold text-gray-900">{precioTexto(contado)}</p>
+							<p class="text-sm tracking-wide text-gray-500 uppercase sm:text-base">Al contado</p>
+							<p class="text-3xl font-bold text-gray-900 sm:text-5xl">{precioTexto(contado)}</p>
 						</div>
 
 						{
 							financiado && (
 								<div class="text-right">
-									<p class="text-base tracking-wide text-gray-500 uppercase">Financiado</p>
-									<p class="text-4xl font-semibold text-emerald-800">{precioTexto(financiado)}</p>
+									<p class="text-sm tracking-wide text-gray-500 uppercase sm:text-base">Financiado</p>
+									<p class="text-2xl font-semibold text-emerald-800 sm:text-4xl">
+										{precioTexto(financiado)}
+									</p>
 								</div>
 							)
 						}
 					</div>
 
-					<dl class="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-gray-200 pt-6 text-base">
+					<dl class="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-gray-200 pt-6 text-sm sm:gap-x-6 sm:gap-y-4 sm:text-base">
 						{
 							resumen.map((dato) => (
 								<div class="flex justify-between gap-2">
@@ -506,6 +476,48 @@ const descripcion = [
 
 				</div>
 			</div>
+
+			<div class="min-w-0 flex flex-col gap-12 border-t border-gray-200 pt-12 lg:col-span-3 lg:col-start-1 lg:row-start-2">
+					{
+						bloques.map((seccion) => (
+							<section>
+								<h2 class="text-lg font-semibold tracking-wide text-gray-900 uppercase">
+									{seccion.titulo}
+								</h2>
+								<span class="mt-2 block h-0.5 w-12 bg-(--accent)" />
+
+								{seccion.filas.length > 0 && (
+									<dl class="mt-5 grid gap-x-12 sm:grid-cols-2">
+										{seccion.filas.map((fila) => (
+											<div class="flex justify-between gap-4 border-b border-gray-100 py-2 text-base">
+												<dt class="text-gray-500">{fila.campo}</dt>
+												<dd class="text-right font-medium text-gray-900">{fila.valor}</dd>
+											</div>
+										))}
+									</dl>
+								)}
+
+							</section>
+						))
+					}
+
+					{
+						comentarios.length > 0 && (
+							<section>
+								<h2 class="text-lg font-semibold tracking-wide text-gray-900 uppercase">
+									Comentarios
+								</h2>
+								<span class="mt-2 block h-0.5 w-12 bg-(--accent)" />
+
+								<div class="mt-5 flex flex-col gap-3 text-base leading-relaxed text-gray-600">
+									{comentarios.map((parrafo) => (
+										<p>{parrafo}</p>
+									))}
+								</div>
+							</section>
+						)
+					}
+				</div>
 		</div>
 
 	</section>

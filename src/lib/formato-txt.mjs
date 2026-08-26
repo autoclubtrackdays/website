@@ -71,7 +71,7 @@ export const CAMPOS = [
 			'Pick-up',
 		],
 	},
-	{ etiqueta: 'Puertas', clave: 'doors', tipo: 'opciones', opciones: ['3', '4', '5'] },
+	{ etiqueta: 'Puertas', clave: 'doors', tipo: 'opciones', opciones: ['2', '3', '4', '5'] },
 	{ etiqueta: 'Plazas', clave: 'seats', tipo: 'opciones', opciones: ['2', '4', '5', '7', '9'] },
 	{
 		etiqueta: 'Traccion',
@@ -94,6 +94,9 @@ export const CAMPOS = [
 	{ etiqueta: 'Vehiculo de alquiler', clave: 'rental', tipo: 'sino' },
 	{ etiqueta: 'Garantia', clave: 'warranty', tipo: 'texto', ayuda: 'Por ejemplo: 12 meses' },
 	{ etiqueta: 'Fotos', clave: 'images', tipo: 'texto', automatico: true },
+	/** Fecha en que se marco vendido, DD/MM/AAAA. Es lo unico que ordena la
+	 *  pagina de vendidos: sin ella saldrian por nombre de archivo. */
+	{ etiqueta: 'Vendido', clave: 'sold_on', tipo: 'texto', automatico: true },
 ];
 
 

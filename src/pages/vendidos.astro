@@ -3,9 +3,17 @@ import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import VendidoCard from '../components/VendidoCard.astro';
 
-// Sin ordenar: un vendido volcado a mano no trae ni fecha ni precio, así que no
-// hay por dónde ordenarlos. Salen como estén en la carpeta.
-const vendidos = await getCollection('vendidos');
+// Los últimos primero. La fecha la pone el panel al marcar el coche como
+// vendido; el que no la traiga se va al final, que es mejor que colarse arriba.
+const alRevesDeLaFecha = (fecha?: string) => {
+	if (!fecha) return -Infinity;
+	const [dia, mes, anio] = fecha.split('/');
+	return Number(anio) * 10000 + Number(mes) * 100 + Number(dia);
+};
+
+const vendidos = (await getCollection('vendidos')).sort(
+	(a, b) => alRevesDeLaFecha(b.data.sold_on) - alRevesDeLaFecha(a.data.sold_on),
+);
 ---
 
 <Layout

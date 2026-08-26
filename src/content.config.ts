@@ -40,6 +40,12 @@ const esquemaCoche = z.object({
 	images: z.coerce.string().optional(),
 	source_url: z.string().optional(),
 
+	/** DD/MM/AAAA: cuando se marco vendido. Solo la traen los de esa colección. */
+	sold_on: z
+		.string()
+		.regex(/^\d{2}\/\d{2}\/\d{4}$/)
+		.optional(),
+
 	// Campos que en el volcado antiguo vivían dentro de las tablas del cuerpo y
 	// que el formulario del panel sí rellena como campos.
 	displacement_cc: z.number().optional(),

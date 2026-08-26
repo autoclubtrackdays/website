@@ -141,6 +141,18 @@
 				position: relative;
 				width: 6rem;
 				margin: 0;
+				cursor: grab;
+			}
+
+			/* La que se está arrastrando se apaga, y las demás dejan hueco al
+			   pasar por encima porque se reordenan en vivo. */
+			#miniaturas figure.arrastrando {
+				opacity: 0.35;
+				cursor: grabbing;
+			}
+
+			#miniaturas figure.portada img {
+				border: 2px solid #000;
 			}
 
 			#miniaturas img {
@@ -441,11 +453,34 @@
 
 			let campos = [];
 
-			/** Fotos nuevas elegidas del disco, todavía sin subir. */
-			let fotos = [];
+			/**
+			 * Galería del coche en el orden en que se verá en la web. Una sola lista
+			 * para poder arrastrar y mezclar las que ya están subidas con las nuevas.
+			 *
+			 *   { tipo: 'r2',    nombre, url }      ya está en R2
+			 *   { tipo: 'nueva', archivo, url }     recién elegida del disco
+			 */
+			let galeria = [];
 
-			/** Fotos que ya están en R2 al editar: { nombre, url }. */
-			let subidas = [];
+			const yaEnR2 = () => galeria.filter((foto) => foto.tipo === 'r2');
+			const sinSubir = () => galeria.filter((foto) => foto.tipo === 'nueva');
+
+			/**
+			 * Nombre de archivo de cada foto, en el orden de la galería.
+			 *
+			 * Las que ya están en R2 conservan el suyo —renombrarlas obligaría a
+			 * volver a subirlas— y las nuevas cogen los primeros números libres. El
+			 * orden no vive en los números sino en el campo Fotos del .txt, que es
+			 * una lista: por eso reordenar al editar no sube ni un byte.
+			 */
+			function nombresDeGaleria() {
+				let siguiente =
+					yaEnR2().reduce((mayor, foto) => Math.max(mayor, Number(foto.nombre) || 0), 0) + 1;
+
+				return galeria.map((foto) =>
+					foto.tipo === 'r2' ? foto.nombre : String(siguiente++).padStart(2, '0'),
+				);
+			}
 
 			// --- Formulario, dibujado desde la misma lista que parsea los .txt ----
 
@@ -470,7 +505,16 @@
 						if (campo.tipo === 'entero') {
 							control = `<input type="number" step="1" min="0" name="${campo.clave}"${valor} ${obligatorio} placeholder=" " />`;
 						} else if (campo.tipo === 'opciones' || campo.tipo === 'sino') {
-							const opciones = campo.tipo === 'sino' ? ['Sí', 'No'] : campo.opciones;
+							const listadas = campo.tipo === 'sino' ? ['Sí', 'No'] : campo.opciones;
+
+							// Si lo que ya tiene el coche no está en la lista, se añade en vez
+							// de dejarlo fuera: el desplegable saldría en blanco y al guardar
+							// se perdería el dato sin que nadie se entere.
+							const opciones =
+								previo !== '' && !listadas.some((o) => String(o) === String(previo))
+									? [previo, ...listadas]
+									: listadas;
+
 							control = `<select name="${campo.clave}" ${obligatorio}>
 								<option value="">—</option>
 								${opciones
@@ -497,46 +541,92 @@
 
 			// --- Fotos -----------------------------------------------------------
 
-			const esImagen = (archivo) => archivo.type.startsWith('image/');
+			// El tipo lo pone el sistema y no siempre lo sabe: en Windows un .heic
+			// del iPhone llega con el tipo vacío. Por eso también se mira la
+			// extensión, que sharp sabe convertir igual.
+			const EXTENSIONES = /\.(jpe?g|png|webp|gif|tiff?|avif|heic|heif)$/i;
+			const esImagen = (archivo) =>
+				archivo.type.startsWith('image/') || EXTENSIONES.test(archivo.name);
 
 			function pintarMiniaturas() {
-				const total = subidas.length + fotos.length;
+				const total = galeria.length;
 
 				$('zona').querySelector('p').textContent =
-					total > 0
-						? `${total} foto${total === 1 ? '' : 's'}. La primera es la de portada.`
-						: 'Arrastra aquí la carpeta con las fotos';
+					total === 0
+						? 'Arrastra aquí la carpeta con las fotos'
+						: total === 1
+							? '1 foto. Es la de portada.'
+							: `${total} fotos. La primera es la de portada; arrástralas para cambiar el orden.`;
 
-				// Primero las que ya están en R2, con su nombre real, y después las
-				// nuevas del disco. Cada una se puede quitar por separado.
-				const yaSubidas = subidas.map(
-					(foto, indice) => `<figure>
-						<img src="${foto.url}" alt="" />
-						<figcaption>${indice + 1}</figcaption>
-						<button type="button" class="quitar" data-quitar-subida="${foto.nombre}" title="Quitar esta foto">✕</button>
+				$('miniaturas').innerHTML = galeria
+					.map(
+						(foto, indice) => `<figure draggable="true" data-indice="${indice}"${indice === 0 ? ' class="portada"' : ''}>
+						<img src="${foto.url}" alt="" draggable="false" />
+						<figcaption>${indice === 0 ? 'Portada' : indice + 1}</figcaption>
+						<button type="button" class="quitar" data-quitar="${indice}" title="Quitar esta foto">✕</button>
 					</figure>`,
-				);
-
-				const nuevas = fotos.map(
-					(foto, indice) => `<figure>
-						<img src="${URL.createObjectURL(foto)}" alt="" />
-						<figcaption>${subidas.length + indice + 1}</figcaption>
-						<button type="button" class="quitar" data-quitar-nueva="${indice}" title="Quitar esta foto">✕</button>
-					</figure>`,
-				);
-
-				$('miniaturas').innerHTML = [...yaSubidas, ...nuevas].join('');
+					)
+					.join('');
 			}
+
+			// --- Reordenar arrastrando -------------------------------------------
+			//
+			// Se mueve el <figure> dentro del DOM mientras dura el arrastre y al
+			// soltar se relee el orden de ahí. Volver a pintar en cada `dragover`
+			// destruiría el elemento que se está arrastrando y cortaría el gesto.
+
+			let arrastrando = null;
+
+			$('miniaturas').addEventListener('dragstart', (evento) => {
+				arrastrando = evento.target.closest('figure');
+				if (!arrastrando) return;
+
+				arrastrando.classList.add('arrastrando');
+				evento.dataTransfer.effectAllowed = 'move';
+				// Firefox no arranca el arrastre si no se escribe algo aquí.
+				evento.dataTransfer.setData('text/plain', arrastrando.dataset.indice);
+			});
+
+			$('miniaturas').addEventListener('dragover', (evento) => {
+				if (!arrastrando) return;
+				evento.preventDefault();
+
+				const encima = evento.target.closest('figure');
+				if (!encima || encima === arrastrando) return;
+
+				// Por qué mitad se está pasando decide si cae antes o después.
+				const caja = encima.getBoundingClientRect();
+				const despues = evento.clientX > caja.left + caja.width / 2;
+
+				encima.parentNode.insertBefore(arrastrando, despues ? encima.nextSibling : encima);
+			});
+
+			$('miniaturas').addEventListener('drop', (evento) => evento.preventDefault());
+
+			$('miniaturas').addEventListener('dragend', () => {
+				if (!arrastrando) return;
+
+				arrastrando.classList.remove('arrastrando');
+				arrastrando = null;
+
+				galeria = [...$('miniaturas').querySelectorAll('figure')].map(
+					(figura) => galeria[Number(figura.dataset.indice)],
+				);
+
+				// Se repinta para renumerar y marcar la nueva portada.
+				pintarMiniaturas();
+			});
 
 			// Quitar una foto suelta, esté ya en R2 o recién elegida.
 			$('miniaturas').addEventListener('click', async (evento) => {
-				const boton = evento.target.closest('button[data-quitar-subida], button[data-quitar-nueva]');
+				const boton = evento.target.closest('button[data-quitar]');
 				if (!boton) return;
 
-				const { quitarSubida, quitarNueva } = boton.dataset;
+				const indice = Number(boton.dataset.quitar);
+				const foto = galeria[indice];
 
-				if (quitarNueva !== undefined) {
-					fotos.splice(Number(quitarNueva), 1);
+				if (foto.tipo === 'nueva') {
+					galeria.splice(indice, 1);
 					return pintarMiniaturas();
 				}
 
@@ -546,22 +636,27 @@
 				const referencia = $('formulario').dataset.referencia;
 
 				const borrada = await fetch(
-					`/api/fotos?referencia=${encodeURIComponent(referencia)}&nombre=${encodeURIComponent(quitarSubida)}`,
+					`/api/fotos?referencia=${encodeURIComponent(referencia)}&nombre=${encodeURIComponent(foto.nombre)}`,
 					{ method: 'DELETE' },
 				).then((r) => r.json());
 
 				if (borrada.error) return alert(borrada.error);
 
-				subidas = subidas.filter((foto) => foto.nombre !== quitarSubida);
+				galeria.splice(indice, 1);
 				pintarMiniaturas();
 			});
 
 			function aceptarArchivos(lista) {
 				// Se añaden a lo que ya hubiera, para poder completar una galería en
 				// dos tandas. Por nombre, que es el orden en que salieron de la cámara.
-				const nuevas = [...lista].filter(esImagen).sort((a, b) => a.name.localeCompare(b.name));
+				// `numeric` es lo que hace que IMG_9 vaya antes que IMG_10; sin eso el
+				// orden alfabético las deja al revés.
+				const nuevas = [...lista]
+					.filter(esImagen)
+					.sort((a, b) => a.name.localeCompare(b.name, 'es', { numeric: true }))
+					.map((archivo) => ({ tipo: 'nueva', archivo, url: URL.createObjectURL(archivo) }));
 
-				fotos = [...fotos, ...nuevas];
+				galeria = [...galeria, ...nuevas];
 				pintarMiniaturas();
 			}
 
@@ -626,23 +721,15 @@
 					if (valor) datos[campo.clave] = campo.tipo === 'entero' ? Number(valor) : valor;
 				}
 
-				// El campo guarda los nombres, no un contador: así se puede borrar una
-				// foto suelta sin renumerar el resto en R2.
-				const nombresNuevos = fotos.map((_, indice) =>
-					String(siguienteNumero() + indice).padStart(2, '0'),
-				);
-
-				const todas = [...subidas.map((foto) => foto.nombre), ...nombresNuevos];
-				if (todas.length > 0) datos.images = todas.join(',');
+				// El campo guarda los nombres y en el orden de la galería: así se puede
+				// borrar o reordenar sin renumerar nada en R2.
+				const nombres = nombresDeGaleria();
+				if (nombres.length > 0) datos.images = nombres.join(',');
 
 				return datos;
 			}
 
 			const etiquetaDe = (clave) => campos.find((c) => c.clave === clave)?.etiqueta ?? clave;
-
-			/** Primer número libre, para no pisar una foto que ya esté en R2. */
-			const siguienteNumero = () =>
-				subidas.reduce((mayor, foto) => Math.max(mayor, Number(foto.nombre) || 0), 0) + 1;
 
 			$('formulario').addEventListener('submit', (e) => {
 				e.preventDefault();
@@ -654,7 +741,7 @@
 						([clave, valor]) =>
 							`<div><dt>${etiquetaDe(clave)}</dt><dd>${valor}</dd></div>`,
 					),
-					`<div><dt>Fotos</dt><dd>${fotos.length}</dd></div>`,
+					`<div><dt>Fotos</dt><dd>${galeria.length}</dd></div>`,
 				].join('');
 
 				$('pregunta').textContent = editando
@@ -677,17 +764,23 @@
 					// vuelven a subir si se ha elegido una carpeta nueva.
 					if (editando) {
 						const referencia = $('formulario').dataset.referencia;
-						const desde = siguienteNumero();
 
-						for (const [indice, foto] of fotos.entries()) {
-							avisar(`Subiendo fotos nuevas… ${indice + 1} de ${fotos.length}`);
+						// Las que ya estaban en R2 no se tocan: si solo se ha cambiado el
+						// orden, esto no sube nada y el orden viaja en el campo Fotos.
+						const nombres = nombresDeGaleria();
+						let hechas = 0;
+
+						for (const [indice, foto] of galeria.entries()) {
+							if (foto.tipo !== 'nueva') continue;
+
+							avisar(`Subiendo fotos nuevas… ${++hechas} de ${sinSubir().length}`);
 
 							const subida = await fetch(
-								`/api/fotos?referencia=${referencia}&indice=${desde + indice}`,
-								{ method: 'POST', body: foto },
+								`/api/fotos?referencia=${referencia}&indice=${Number(nombres[indice])}`,
+								{ method: 'POST', body: foto.archivo },
 							).then((r) => r.json());
 
-							if (subida.error) throw new Error(`Foto ${indice + 1}: ${subida.error}`);
+							if (subida.error) throw new Error(`Foto ${hechas}: ${subida.error}`);
 						}
 
 						const cambio = await fetch(`/api/coche/${encodeURIComponent(editando)}`, {
@@ -714,19 +807,20 @@
 
 					if (alta.error) throw new Error(alta.error);
 
-					for (const [indice, foto] of fotos.entries()) {
-						avisar(`Subiendo fotos… ${indice + 1} de ${fotos.length}`);
+					// En el orden de la galería: la primera es la portada.
+					for (const [indice, foto] of galeria.entries()) {
+						avisar(`Subiendo fotos… ${indice + 1} de ${galeria.length}`);
 
 						const subida = await fetch(
 							`/api/fotos?referencia=${alta.referencia}&indice=${indice + 1}`,
-							{ method: 'POST', body: foto },
+							{ method: 'POST', body: foto.archivo },
 						).then((r) => r.json());
 
 						if (subida.error) throw new Error(`Foto ${indice + 1}: ${subida.error}`);
 					}
 
 					avisar(
-						`Coche creado con la referencia <strong>${alta.referencia}</strong> y ${fotos.length} fotos subidas.`,
+						`Coche creado con la referencia <strong>${alta.referencia}</strong> y ${galeria.length} fotos subidas.`,
 						'bueno',
 					);
 
@@ -789,8 +883,7 @@
 
 			function irAlInicio() {
 				editando = null;
-				fotos = [];
-				subidas = [];
+				galeria = [];
 				delete $('formulario').dataset.referencia;
 				$('formulario').reset();
 				pintarMiniaturas();
@@ -803,8 +896,7 @@
 
 			$('empezar').addEventListener('click', () => {
 				editando = null;
-				fotos = [];
-				subidas = [];
+				galeria = [];
 				pintarMiniaturas();
 				pintarCampos();
 				mostrar('formulario', 'Nuevo coche');
@@ -968,7 +1060,7 @@
 					editando = editar;
 					pintarCampos(coche.datos);
 					$('comentario').value = coche.comentario ?? '';
-					fotos = [];
+					galeria = [];
 
 					// La referencia se guarda en el formulario: hace falta para subir
 					// o borrar fotos de este coche mientras se edita.
@@ -978,7 +1070,23 @@
 						`/api/fotos?referencia=${encodeURIComponent(coche.datos.reference ?? '')}`,
 					).then((r) => r.json());
 
-					subidas = yaEstan.fotos ?? [];
+					// R2 devuelve las fotos por nombre, así que el orden bueno es el del
+					// campo Fotos del .txt. Si no se respetara, abrir un coche y guardarlo
+					// sin tocar nada le cambiaría la portada.
+					const enR2 = yaEstan.fotos ?? [];
+					const orden = String(coche.datos.images ?? '')
+						.split(',')
+						.map((nombre) => nombre.trim())
+						.filter(Boolean);
+					const porNombre = new Map(enR2.map((foto) => [foto.nombre, foto]));
+
+					galeria = [
+						...orden.map((nombre) => porNombre.get(nombre)).filter(Boolean),
+						// Las que estén en R2 pero no en el .txt van al final, para verlas
+						// en vez de dejarlas ocupando sitio sin que nadie lo sepa.
+						...enR2.filter((foto) => !orden.includes(foto.nombre)),
+					].map((foto) => ({ tipo: 'r2', ...foto }));
+
 					pintarMiniaturas();
 					mostrar('formulario', 'Editar coche');
 					return;
