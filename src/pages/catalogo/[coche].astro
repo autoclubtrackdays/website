@@ -19,9 +19,14 @@ export async function getStaticPaths() {
 	const enStock = await getCollection('coches');
 	const vendidos = await getCollection('vendidos');
 
+	// Un vendido sin los datos de la ficha (los volcados a mano) no genera
+	// página: nadie enlaza a ella y saldría medio vacía.
+	const conFicha = (coche: { data: Record<string, unknown> }) =>
+		Boolean(coche.data.price_eur && coche.data.mileage_km && coche.data.first_registration);
+
 	const todos = [
 		...enStock.map((coche) => ({ coche, vendido: false })),
-		...vendidos.map((coche) => ({ coche, vendido: true })),
+		...vendidos.filter(conFicha).map((coche) => ({ coche, vendido: true })),
 	];
 
 	// Con la referencia dentro del slug no debería colisionar nunca, pero si el

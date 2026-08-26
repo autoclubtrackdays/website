@@ -107,11 +107,31 @@ const coches = defineCollection({
 	schema: esquemaCoche,
 });
 
-/** Un coche vendido es la misma entrada movida a src/content/vendidos/. Su ficha
- *  sigue publicándose con el distintivo de vendido, pero sale del catálogo. */
+/**
+ * Un coche vendido puede llegar por dos caminos.
+ *
+ * Si lo marca el panel, es la entrada de siempre movida a src/content/vendidos/
+ * y la trae todo. Si es una venta antigua que se vuelca a mano, de la tarjeta
+ * solo salen la foto, el nombre y el modelo, así que exigirle precio, fecha o
+ * combustible obligaría a inventárselos para que no enseñe ninguno de ellos.
+ *
+ * Por eso el esquema es el mismo con esos campos en opcional: los que vienen
+ * completos conservan su ficha, y los demás no arrastran datos de relleno.
+ */
+const esquemaVendido = esquemaCoche.extend({
+	price_eur: z.number().optional(),
+	mileage_km: z.number().optional(),
+	first_registration: z
+		.string()
+		.regex(/^\d{2}\/\d{4}$/)
+		.optional(),
+	fuel: z.string().optional(),
+	transmission: z.string().optional(),
+});
+
 const vendidos = defineCollection({
 	loader: lectorCoches('./src/content/vendidos'),
-	schema: esquemaCoche,
+	schema: esquemaVendido,
 });
 
 export const collections = { coches, vendidos };

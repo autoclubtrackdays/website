@@ -3,10 +3,9 @@ import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import VendidoCard from '../components/VendidoCard.astro';
 
-// Los últimos primero: lo recién vendido es lo que interesa enseñar.
-const vendidos = (await getCollection('vendidos')).sort(
-	(a, b) => b.data.price_eur - a.data.price_eur,
-);
+// Sin ordenar: un vendido volcado a mano no trae ni fecha ni precio, así que no
+// hay por dónde ordenarlos. Salen como estén en la carpeta.
+const vendidos = await getCollection('vendidos');
 ---
 
 <Layout
