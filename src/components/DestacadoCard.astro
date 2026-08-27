@@ -39,9 +39,18 @@ const { contado } = precios(data);
 		     precio quede a la misma altura en todas las tarjetas de la fila. -->
 		<p class="mt-0.5 text-sm text-gray-600 min-h-5">{data.variant}</p>
 
+		<!-- Aquí no se pone guión: es una línea de texto corrido y «— · 7.000 km · —»
+		     se lee peor que la lista corta con lo que sí se sabe. -->
 		<p class="mt-1 text-sm text-gray-500">
-			{data.first_registration} · {kmTexto(data.mileage_km)} · {data.fuel} · {
-				cambioTexto(data.transmission)
+			{
+				[
+					data.first_registration,
+					data.mileage_km != null && kmTexto(data.mileage_km),
+					data.fuel,
+					cambioTexto(data.transmission),
+				]
+					.filter(Boolean)
+					.join(' · ')
 			}
 		</p>
 

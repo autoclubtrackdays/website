@@ -14,6 +14,7 @@ Color: Blanco
 Accidentes: No
 Vehiculo de alquiler: No
 Fotos: 01,02,03,04,05,06,07,08,09,10
+Alta: 26/08/2026
 
 Comentario:
 Vendo Mkni 1000 Special hecho histórico de proyecto con un coste de más 1.000€,  en impecable estado de mecánica y chapa. Llantas Minilite con neumáticos en buen estado.

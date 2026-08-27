@@ -43,16 +43,28 @@ export function slugCoche(data: Datos): string {
 
 export const rutaCoche = (data: Datos) => `/catalogo/${slugCoche(data)}`;
 
+/** Lo que se pinta donde un dato no está determinado. */
+export const GUION = '—';
+
+/** Un coche puede estar a la venta sin precio cerrado, y ahí un guión se lee
+ *  como un fallo de la web en vez de como una decisión. */
+export const SIN_PRECIO = 'Consultar precio';
+
+// `useGrouping: 'always'` no es un capricho: en español la norma es no agrupar
+// los números de cuatro cifras, así que por defecto Intl daba «6900 €» al lado
+// de «127.900 €». En una lista de precios eso parece una errata.
 const precioFmt = new Intl.NumberFormat('es-ES', {
 	style: 'currency',
 	currency: 'EUR',
 	maximumFractionDigits: 0,
+	useGrouping: 'always',
 });
-const kmFmt = new Intl.NumberFormat('es-ES');
+const kmFmt = new Intl.NumberFormat('es-ES', { useGrouping: 'always' });
 
-export const precioTexto = (euros: number) => precioFmt.format(euros);
+export const precioTexto = (euros?: number | null) =>
+	euros == null ? SIN_PRECIO : precioFmt.format(euros);
 
-export const kmTexto = (km: number) => `${kmFmt.format(km)} km`;
+export const kmTexto = (km?: number | null) => (km == null ? GUION : `${kmFmt.format(km)} km`);
 
 /** 'BMW M4', 'Ford Mustang'. Sin `model` (algún clásico) tira del título. */
 export const nombreCorto = (data: Datos) => (data.model ? `${data.make} ${data.model}` : data.title);
@@ -68,9 +80,12 @@ export function potenciaTexto(data: Datos): string | null {
 	return data.power_hp ? `${data.power_hp} CV` : `${data.power_kw} kW`;
 }
 
-/** El origen manda 'manual' y 'Automático' sin criterio fijo. */
-export const cambioTexto = (transmission: string) =>
-	transmission.charAt(0).toUpperCase() + transmission.slice(1).toLowerCase();
+/** El origen manda 'manual' y 'Automático' sin criterio fijo. Devuelve undefined
+ *  si el coche no lo declara, para que quien lo pinte decida qué poner. */
+export const cambioTexto = (transmission?: string) =>
+	transmission
+		? transmission.charAt(0).toUpperCase() + transmission.slice(1).toLowerCase()
+		: undefined;
 
 /** Los dos precios del coche. El financiado es opcional: si no está, o si
  *  coincide con el de contado, no se pinta y la tarjeta enseña una sola cifra. */
@@ -78,14 +93,23 @@ export function precios(data: Datos) {
 	const financiado = data.price_financed_eur ?? null;
 
 	return {
-		contado: data.price_eur,
+		contado: data.price_eur ?? null,
 		financiado: financiado && financiado !== data.price_eur ? financiado : null,
 	};
 }
 
 
+/** '26/08/2026' -> 20260826. Mismo truco, con el día. Sin fecha devuelve 0, que
+ *  manda al final a los coches que entraron antes de que existiera el campo. */
+export function ordenAlta(listed_on?: string): number {
+	if (!listed_on) return 0;
+	const [dia, mes, anio] = listed_on.split('/');
+	return Number(anio) * 10000 + Number(mes) * 100 + Number(dia);
+}
+
 /** '11/2017' -> 201711. Un número así ordena por fecha sin parsear nada. */
-export function ordenFecha(first_registration: string): number {
+export function ordenFecha(first_registration?: string): number {
+	if (!first_registration) return 0;
 	const [mes, anio] = first_registration.split('/');
 	return Number(anio) * 100 + Number(mes);
 }

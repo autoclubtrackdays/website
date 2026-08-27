@@ -496,7 +496,11 @@
 						const previo = valores[campo.clave] ?? '';
 						const valor = previo === '' ? '' : ` value="${String(previo).replace(/"/g, '&quot;')}"`;
 						const obligatorio = campo.obligatorio ? 'required' : '';
-						const marca = campo.obligatorio ? '' : ' <span class="opcional">(opcional)</span>';
+
+						// Ya solo la marca es obligatoria, así que la coletilla se le pone a
+						// esa. Marcar «(opcional)» en los otros veinticinco era ruido, y de
+						// paso hacía pensar que lo demás había que rellenarlo por narices.
+						const marca = campo.obligatorio ? ' <span class="opcional">(obligatorio)</span>' : '';
 						const ayuda = campo.ayuda ? `<p class="ayuda">${campo.ayuda}</p>` : '';
 						const sufijo = campo.sufijo ? ` <span class="opcional">(${campo.sufijo})</span>` : '';
 

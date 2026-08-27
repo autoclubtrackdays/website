@@ -98,7 +98,7 @@ async function generarReferencia() {
 async function altaCoche(peticion, respuesta) {
 	const { datos = {}, comentario = '' } = JSON.parse(await leerCuerpo(peticion));
 
-	const faltan = ['make', 'price_eur', 'mileage_km', 'first_registration'].filter(
+	const faltan = ['make'].filter(
 		(clave) => datos[clave] === undefined || datos[clave] === '',
 	);
 
@@ -107,7 +107,10 @@ async function altaCoche(peticion, respuesta) {
 	}
 
 	const referencia = await generarReferencia();
-	const completos = { ...datos, reference: referencia };
+
+	// La fecha de alta la pone el servidor, no el formulario: es lo que ordena el
+	// catálogo por defecto, con lo último en entrar arriba.
+	const completos = { ...datos, reference: referencia, listed_on: hoyEnEspanol() };
 
 	const nombre = `${aSlug([datos.make, datos.model, datos.variant].filter(Boolean).join(' '))}-${referencia}`;
 	const ruta = join(COCHES, `${nombre}.txt`);
@@ -428,6 +431,9 @@ async function actualizarCoche(peticion, respuesta, id) {
 		...datos,
 		reference: anterior.datos.reference,
 		images: datos.images ?? anterior.datos.images,
+		// Automáticos los dos: el formulario no los manda, así que hay que
+		// arrastrarlos a mano o se pierden en cada guardado.
+		listed_on: anterior.datos.listed_on,
 	};
 	const nuevoId = nombreDeArchivo(completos);
 

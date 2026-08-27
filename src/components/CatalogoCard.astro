@@ -2,6 +2,7 @@
 import type { CollectionEntry } from 'astro:content';
 import {
 	cambioTexto,
+	GUION,
 	kmTexto,
 	nombreCorto,
 	portada,
@@ -21,10 +22,12 @@ const { data } = coche;
 const { contado, financiado } = precios(data);
 
 // Una fila por pareja: el primer dato va a la izquierda y el segundo a la derecha.
+// Lo que el coche no declare sale con guión: la rejilla es fija, y dejar el hueco
+// vacío descuadraba la tarjeta contra las de al lado.
 const especificaciones = [
-	[kmTexto(data.mileage_km), data.first_registration],
-	[potenciaTexto(data) ?? '—', cambioTexto(data.transmission)],
-	[data.body_type ?? '—', data.fuel],
+	[kmTexto(data.mileage_km), data.first_registration ?? GUION],
+	[potenciaTexto(data) ?? GUION, cambioTexto(data.transmission) ?? GUION],
+	[data.body_type ?? GUION, data.fuel ?? GUION],
 ];
 ---
 

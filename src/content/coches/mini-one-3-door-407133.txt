@@ -23,6 +23,7 @@ ITV nueva: No
 Vehiculo de alquiler: No
 Garantia: 12 meses
 Fotos: 01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23
+Alta: 26/08/2026
 
 Comentario:
 MINI One 1.6 90 CV – MUY CUIDADO | CarPlay | Libro de mantenimiento | ITV | Manual

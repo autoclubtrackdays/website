@@ -22,7 +22,7 @@ export const CAMPOS = [
 		tipo: 'texto',
 		ayuda: 'Dejalo vacio si el coche no tiene mas nombre que el modelo',
 	},
-	{ etiqueta: 'Precio', clave: 'price_eur', tipo: 'entero', obligatorio: true, sufijo: '€' },
+	{ etiqueta: 'Precio', clave: 'price_eur', tipo: 'entero', sufijo: '€' },
 	{
 		etiqueta: 'Precio financiado',
 		clave: 'price_financed_eur',
@@ -30,13 +30,12 @@ export const CAMPOS = [
 		sufijo: '€',
 		ayuda: 'Déjalo vacío si no ofreces financiación para este coche',
 	},
-	{ etiqueta: 'Kilometros', clave: 'mileage_km', tipo: 'entero', obligatorio: true, sufijo: 'km' },
-	{ etiqueta: 'Fecha', clave: 'first_registration', tipo: 'fecha', obligatorio: true },
+	{ etiqueta: 'Kilometros', clave: 'mileage_km', tipo: 'entero', sufijo: 'km' },
+	{ etiqueta: 'Fecha', clave: 'first_registration', tipo: 'fecha' },
 	{
 		etiqueta: 'Combustible',
 		clave: 'fuel',
 		tipo: 'opciones',
-		obligatorio: true,
 		opciones: ['Gasolina', 'Diésel', 'Híbrido', 'Híbrido enchufable', 'Eléctrico', 'GLP', 'GNC'],
 	},
 	{
@@ -49,7 +48,6 @@ export const CAMPOS = [
 		etiqueta: 'Cambio',
 		clave: 'transmission',
 		tipo: 'opciones',
-		obligatorio: true,
 		opciones: ['Manual', 'Automático'],
 	},
 	{ etiqueta: 'Potencia CV', clave: 'power_hp', tipo: 'entero', sufijo: 'CV' },
@@ -94,6 +92,9 @@ export const CAMPOS = [
 	{ etiqueta: 'Vehiculo de alquiler', clave: 'rental', tipo: 'sino' },
 	{ etiqueta: 'Garantia', clave: 'warranty', tipo: 'texto', ayuda: 'Por ejemplo: 12 meses' },
 	{ etiqueta: 'Fotos', clave: 'images', tipo: 'texto', automatico: true },
+	/** Fecha en que se dio de alta, DD/MM/AAAA. Es lo que ordena el catálogo por
+	 *  defecto: los últimos en entrar, arriba. */
+	{ etiqueta: 'Alta', clave: 'listed_on', tipo: 'texto', automatico: true },
 	/** Fecha en que se marco vendido, DD/MM/AAAA. Es lo unico que ordena la
 	 *  pagina de vendidos: sin ella saldrian por nombre de archivo. */
 	{ etiqueta: 'Vendido', clave: 'sold_on', tipo: 'texto', automatico: true },

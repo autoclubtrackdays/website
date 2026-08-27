@@ -4,6 +4,12 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { componerTitulo, parsearTxt } from './lib/formato-txt.mjs';
 
+// Salvo la marca, todos los campos son opcionales. No es dejadez: hay entradas
+// que no tienen ni van a tener ficha completa —una moto, un clásico del 57 sin
+// kilometraje conocido— y forzar un valor obligaba a inventárselo. Lo que no se
+// sabe se pinta con un guión, y en los datos estructurados simplemente no se
+// declara, que es lo que exige Google.
+//
 // Claves tal y como las escupe el origen de datos: no se renombran aquí para
 // que volver a importar el stock no obligue a tocar el esquema.
 //
@@ -17,15 +23,18 @@ const esquemaCoche = z.object({
 	model: z.coerce.string().optional(),
 	/** Opcional: un MINI 1000 o un M4 no tienen mas version que el modelo. */
 	variant: z.coerce.string().optional(),
-	price_eur: z.number(),
+	price_eur: z.number().optional(),
 	price_financed_eur: z.number().optional(),
 	price_formatted: z.string().optional(),
-	mileage_km: z.number(),
+	mileage_km: z.number().optional(),
 	/** MM/AAAA. */
-	first_registration: z.string().regex(/^\d{2}\/\d{4}$/),
-	fuel: z.string(),
+	first_registration: z
+		.string()
+		.regex(/^\d{2}\/\d{4}$/)
+		.optional(),
+	fuel: z.string().optional(),
 	/** Llega despistado en mayúsculas y minúsculas; se normaliza al mostrarlo. */
-	transmission: z.string(),
+	transmission: z.string().optional(),
 	/** Los clásicos no la traen. */
 	power_kw: z.number().optional(),
 	power_hp: z.number().optional(),
@@ -39,6 +48,12 @@ const esquemaCoche = z.object({
 	/** Lista de nombres: '01,02,05'. Admite un número por compatibilidad. */
 	images: z.coerce.string().optional(),
 	source_url: z.string().optional(),
+
+	/** DD/MM/AAAA: cuando entró en el catálogo. Ordena la lista por defecto. */
+	listed_on: z
+		.string()
+		.regex(/^\d{2}\/\d{2}\/\d{4}$/)
+		.optional(),
 
 	/** DD/MM/AAAA: cuando se marco vendido. Solo la traen los de esa colección. */
 	sold_on: z
@@ -121,23 +136,12 @@ const coches = defineCollection({
  * solo salen la foto, el nombre y el modelo, así que exigirle precio, fecha o
  * combustible obligaría a inventárselos para que no enseñe ninguno de ellos.
  *
- * Por eso el esquema es el mismo con esos campos en opcional: los que vienen
- * completos conservan su ficha, y los demás no arrastran datos de relleno.
+ * Ahora da igual: el esquema es el mismo y casi todo es opcional, así que un
+ * volcado a mano entra sin inventarse nada.
  */
-const esquemaVendido = esquemaCoche.extend({
-	price_eur: z.number().optional(),
-	mileage_km: z.number().optional(),
-	first_registration: z
-		.string()
-		.regex(/^\d{2}\/\d{4}$/)
-		.optional(),
-	fuel: z.string().optional(),
-	transmission: z.string().optional(),
-});
-
 const vendidos = defineCollection({
 	loader: lectorCoches('./src/content/vendidos'),
-	schema: esquemaVendido,
+	schema: esquemaCoche,
 });
 
 export const collections = { coches, vendidos };

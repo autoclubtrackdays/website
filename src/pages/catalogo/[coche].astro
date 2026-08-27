@@ -8,6 +8,7 @@ import {
 	fotos,
 	kmTexto,
 	nombreCorto,
+	GUION,
 	nombreCompleto,
 	rutaCoche,
 	potenciaTexto,
@@ -20,14 +21,9 @@ export async function getStaticPaths() {
 	const enStock = await getCollection('coches');
 	const vendidos = await getCollection('vendidos');
 
-	// Un vendido sin los datos de la ficha (los volcados a mano) no genera
-	// página: nadie enlaza a ella y saldría medio vacía.
-	const conFicha = (coche: { data: Record<string, unknown> }) =>
-		Boolean(coche.data.price_eur && coche.data.mileage_km && coche.data.first_registration);
-
 	const todos = [
 		...enStock.map((coche) => ({ coche, vendido: false })),
-		...vendidos.filter(conFicha).map((coche) => ({ coche, vendido: true })),
+		...vendidos.map((coche) => ({ coche, vendido: true })),
 	];
 
 	// Con la referencia dentro del slug no debería colisionar nunca, pero si el
@@ -56,14 +52,17 @@ const { contado, financiado } = precios(data);
 const nombre = nombreCorto(data);
 
 // Resumen de cabecera: lo que se mira antes de bajar a la ficha completa.
+// Son seis casillas fijas: lo que el coche no declare sale con guión, en vez de
+// desaparecer y dejar la rejilla coja. La ficha larga de más abajo sí esconde lo
+// que falta, porque allí serían diecisiete guiones seguidos.
 const resumen = [
 	{ campo: 'Kilometraje', valor: kmTexto(data.mileage_km) },
-	{ campo: 'Fecha', valor: data.first_registration },
-	{ campo: 'Potencia', valor: potenciaTexto(data) },
-	{ campo: 'Cambio', valor: cambioTexto(data.transmission) },
-	{ campo: 'Combustible', valor: data.fuel },
-	{ campo: 'Color', valor: data.color },
-].filter((dato): dato is { campo: string; valor: string } => Boolean(dato.valor));
+	{ campo: 'Fecha', valor: data.first_registration ?? GUION },
+	{ campo: 'Potencia', valor: potenciaTexto(data) ?? GUION },
+	{ campo: 'Cambio', valor: cambioTexto(data.transmission) ?? GUION },
+	{ campo: 'Combustible', valor: data.fuel ?? GUION },
+	{ campo: 'Color', valor: data.color ?? GUION },
+];
 
 const fila = (campo: string, valor: unknown) => ({ campo, valor: String(valor ?? '') });
 
@@ -124,10 +123,14 @@ const mensajeWhatsapp = encodeURIComponent(
 const descripcion = [
 	nombreCompleto(data),
 	data.first_registration,
-	kmTexto(data.mileage_km),
+	data.mileage_km != null && kmTexto(data.mileage_km),
 	potenciaTexto(data),
 	cambioTexto(data.transmission),
-	vendido ? 'Vendido' : `${precioTexto(contado)} en Autoclub Trackdays, Madrid`,
+	vendido
+		? 'Vendido'
+		: contado != null
+			? `${precioTexto(contado)} en Autoclub Trackdays, Madrid`
+			: 'En Autoclub Trackdays, Madrid',
 ]
 	.filter(Boolean)
 	.join(' · ');
@@ -169,15 +172,18 @@ const esquemaCoche = {
 
 	// De la fecha solo se declara el año: el .txt guarda MM/AAAA y
 	// `vehicleModelDate` espera una fecha, no un mes suelto.
-	...si(data.first_registration, {
-		vehicleModelDate: data.first_registration.split('/')[1],
-	}),
+	//
+	// Aquí no se puede usar `si()`: sus argumentos se evalúan antes de que decida,
+	// así que el `.split` reventaba en los coches que no traen fecha.
+	...(data.first_registration ? { vehicleModelDate: data.first_registration.split('/')[1] } : {}),
 
-	mileageFromOdometer: {
-		'@type': 'QuantitativeValue',
-		value: data.mileage_km,
-		unitCode: 'KMT',
-	},
+	...si(data.mileage_km, {
+		mileageFromOdometer: {
+			'@type': 'QuantitativeValue',
+			value: data.mileage_km,
+			unitCode: 'KMT',
+		},
+	}),
 
 	// En kW y cm³ porque son las unidades que entiende el vocabulario; los CV
 	// se siguen viendo en la ficha de la página.
@@ -197,7 +203,10 @@ const esquemaCoche = {
 		},
 	}),
 
-	offers: {
+	// Sin precio no hay oferta que declarar: un `Offer` sin `price` es inválido y
+	// Google puede desactivar los resultados enriquecidos de todo el sitio.
+	...si(contado != null, {
+		offers: {
 		'@type': 'Offer',
 		url: urlCoche,
 		price: contado,
@@ -206,7 +215,8 @@ const esquemaCoche = {
 		availability: vendido ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
 		// Apunta a la ficha del negocio de la portada en vez de repetirla.
 		seller: { '@id': new URL('#negocio', Astro.site).href },
-	},
+		},
+	}),
 };
 
 /** La ruta que Google enseña bajo el título, en lugar de la URL cruda. */

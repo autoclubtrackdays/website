@@ -23,6 +23,7 @@ ITV nueva: No
 Vehiculo de alquiler: No
 Garantia: 12 meses
 Fotos: 01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32
+Alta: 26/08/2026
 
 Comentario:
 Audi A4 35 TFSI 150CV S tronic S line de junio de 2019

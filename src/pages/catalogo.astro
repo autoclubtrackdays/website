@@ -3,14 +3,25 @@ import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import CatalogoCard from '../components/CatalogoCard.astro';
 import Desplegable from '../components/Desplegable.astro';
-import { cambioTexto, ordenFecha, textoBusqueda } from '../lib/coches';
+import { cambioTexto, ordenAlta, ordenFecha, textoBusqueda } from '../lib/coches';
 
-// Mismo orden que el que aplica el script por defecto, para que no baile al cargar.
-const coches = (await getCollection('coches')).sort((a, b) => b.data.price_eur - a.data.price_eur);
+// Los últimos en entrar, arriba. Mismo orden que el que aplica el script por
+// defecto, para que la lista no baile al cargar.
+//
+// El desempate por referencia no es cosmético: los veinte primeros se dieron de
+// alta el mismo día, y sin él dos builds seguidos podían ordenarlos distinto.
+const coches = (await getCollection('coches')).sort(
+	(a, b) =>
+		ordenAlta(b.data.listed_on) - ordenAlta(a.data.listed_on) ||
+		Number(b.data.reference) - Number(a.data.reference),
+);
 
 // Los desplegables se llenan con lo que hay en stock: nunca ofrecen una opción
 // que no devuelva resultados.
-const opciones = (valores: string[]) => [...new Set(valores)].sort();
+// El `filter(Boolean)` importa: un coche que no declara combustible metía una
+// opción en blanco en el desplegable.
+const opciones = (valores: (string | undefined)[]) =>
+	[...new Set(valores.filter((valor): valor is string => Boolean(valor)))].sort();
 
 const marcas = opciones(coches.map((coche) => coche.data.make));
 const combustibles = opciones(coches.map((coche) => coche.data.fuel));
@@ -18,9 +29,15 @@ const cambios = opciones(coches.map((coche) => cambioTexto(coche.data.transmissi
 
 // La primera es la de por defecto.
 const ordenaciones = [
+	{ valor: 'alta:desc', texto: 'Novedades' },
 	{ valor: 'precio:desc', texto: 'Precio: de mayor a menor' },
 	{ valor: 'precio:asc', texto: 'Precio: de menor a mayor' },
-	{ valor: 'km:asc', texto: 'Kilometraje: menos primero' },
+	{ valor: 'km:asc', texto: 'Kilometraje: de menos a más' },
+	{ valor: 'km:desc', texto: 'Kilometraje: de más a menos' },
+	{ valor: 'fecha:desc', texto: 'Año: del más nuevo al más antiguo' },
+	{ valor: 'fecha:asc', texto: 'Año: del más antiguo al más nuevo' },
+	{ valor: 'potencia:desc', texto: 'Caballos: de más a menos' },
+	{ valor: 'potencia:asc', texto: 'Caballos: de menos a más' },
 ];
 
 // La primera opción de cada filtro es la de "sin filtrar", con valor vacío.
@@ -115,12 +132,13 @@ const filtros = [
 					<li
 						data-coche
 						data-marca={coche.data.make}
-						data-combustible={coche.data.fuel}
-						data-cambio={cambioTexto(coche.data.transmission)}
-						data-precio={coche.data.price_eur}
-						data-km={coche.data.mileage_km}
+						data-combustible={coche.data.fuel ?? ''}
+						data-cambio={cambioTexto(coche.data.transmission) ?? ''}
+						data-precio={coche.data.price_eur ?? ''}
+						data-km={coche.data.mileage_km ?? ''}
 						data-fecha={ordenFecha(coche.data.first_registration)}
-						data-potencia={coche.data.power_kw ?? 0}
+						data-alta={ordenAlta(coche.data.listed_on)}
+						data-potencia={coche.data.power_hp ?? 0}
 						data-busqueda={textoBusqueda(coche.data)}
 					>
 						<CatalogoCard coche={coche} />
@@ -199,9 +217,20 @@ const filtros = [
 			const [campo, direccion] = (orden.dataset.valor ?? '').split(':');
 			const factor = direccion === 'desc' ? -1 : 1;
 
-			const ordenadas = [...tarjetas].sort(
-				(a, b) => (Number(a.dataset[campo]) - Number(b.dataset[campo])) * factor,
-			);
+			// Un coche sin ese dato se va siempre al final, ordenes como ordenes. Si
+			// se tratara como un cero encabezaría los ascendentes, y un coche sin
+			// precio saldría el primero al ordenar de menor a mayor.
+			const valor = (tarjeta: HTMLElement) => {
+				const bruto = tarjeta.dataset[campo];
+				const numero = bruto === '' || bruto === undefined ? NaN : Number(bruto);
+				return Number.isFinite(numero) ? numero : null;
+			};
+
+			const ordenadas = [...tarjetas].sort((a, b) => {
+				const [x, y] = [valor(a), valor(b)];
+				if (x === null || y === null) return x === y ? 0 : x === null ? 1 : -1;
+				return (x - y) * factor;
+			});
 
 			// Si ya están en ese orden no se toca el DOM: reinsertar un nodo
 			// reinicia sus animaciones CSS, y eso relanzaba la entrada en cada tecla.
