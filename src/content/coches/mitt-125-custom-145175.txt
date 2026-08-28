@@ -4,10 +4,6 @@ Modelo: 125
 Version: Custom
 Precio: 2300
 Kilometros: 1170
-Fecha: 99/2021
-Combustible: 99999
-Cambio: 99999
-Potencia CV: 99999
 Puertas: 0
 Plazas: 0
 Fotos: 01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30
