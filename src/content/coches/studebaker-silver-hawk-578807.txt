@@ -2,11 +2,6 @@ Referencia: 578807
 Marca: Studebaker
 Modelo: Silver Hawk
 Precio: 23800
-Kilometros: 99999
-Fecha: 99/1957
-Combustible: 99999
-Cambio: 99999
-Potencia CV: 99999
 Fotos: 01,02,03,04,05,06,07,08,09,10
 Alta: 26/08/2026
 
