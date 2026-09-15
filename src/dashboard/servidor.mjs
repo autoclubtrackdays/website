@@ -230,6 +230,42 @@ async function hayPendiente(respuesta) {
 	json(respuesta, 200, { hay: cambios + commits > 0, cambios, commits });
 }
 
+/**
+ * Trae lo que se haya publicado desde el otro ordenador.
+ *
+ * `--rebase` pone lo de aquí encima de lo de la web en lugar de fabricar un
+ * commit de fusión, y `--autostash` aparta lo que haya sin commitear: en el
+ * ordenador de desarrollo casi siempre hay código a medias, y sin eso el rebase
+ * se niega con «cannot rebase: You have unstaged changes».
+ *
+ * Si choca, deshace el rebase antes de devolver el error. Sin ese `--abort` el
+ * repositorio se queda a mitad de un rebase y el panel deja de funcionar hasta
+ * que alguien abra una terminal, que es justo lo que el panel viene a evitar.
+ *
+ * El plazo de espera es para el caso de estar sin red: git se quedaría colgado
+ * resolviendo el nombre y el panel no llegaría a abrir.
+ */
+async function traerCambios() {
+	try {
+		await ejecutar('git', ['pull', '--rebase', '--autostash'], { cwd: RAIZ, timeout: 20000 });
+		return { ok: true };
+	} catch (error) {
+		const { stdout: enConflicto } = await ejecutar(
+			'git',
+			['diff', '--name-only', '--diff-filter=U'],
+			{ cwd: RAIZ },
+		).catch(() => ({ stdout: '' }));
+
+		await ejecutar('git', ['rebase', '--abort'], { cwd: RAIZ }).catch(() => {});
+
+		return {
+			ok: false,
+			conflictos: enConflicto.trim().split('\n').filter(Boolean),
+			detalle: error.stderr?.trim() || error.message,
+		};
+	}
+}
+
 /** Publica: add, commit y push. Devuelve la salida tal cual para poder leerla. */
 async function publicar(peticion, respuesta) {
 	const { mensaje = 'Nuevo coche desde el panel' } = JSON.parse(
@@ -265,6 +301,22 @@ async function publicar(peticion, respuesta) {
 
 		if (!preparado.trim() && !sinEnviar.trim()) {
 			return json(respuesta, 200, { publicado: false, detalle: 'No había nada que publicar' });
+		}
+
+		// Antes de empujar, lo de la web. Si el otro ordenador publicó primero, sin
+		// esto el push se rechaza y el panel se queda atascado en el error.
+		const traido = await traerCambios();
+
+		if (!traido.ok) {
+			const cuales = traido.conflictos.length
+				? `\n\nSe pisan estos archivos:\n${traido.conflictos.map((c) => `  ${c}`).join('\n')}`
+				: `\n\n${traido.detalle}`;
+
+			return json(respuesta, 409, {
+				error:
+					'Se ha cambiado lo mismo desde el otro ordenador. Tu trabajo está guardado aquí, ' +
+					`pero no se ha publicado.${cuales}\n\nAvisa antes de seguir tocando estos coches.`,
+			});
 		}
 
 		const { stdout, stderr } = await ejecutar('git', ['push'], { cwd: RAIZ });
@@ -630,8 +682,19 @@ const servidor = createServer(async (peticion, respuesta) => {
 });
 
 // Solo localhost: el panel no debe ser accesible desde la red.
+// Se arranca con lo último de la web, para no editar un coche que en el otro
+// ordenador ya se vendió. Si falla no se aborta: sin red se tiene que poder
+// seguir dando de alta coches; lo que no se puede es publicar a ciegas, y de eso
+// se encarga el mismo paso dentro de publicar().
+const alArrancar = await traerCambios();
+
 servidor.listen(PUERTO, '127.0.0.1', () => {
 	console.log(`\n  Panel abierto en http://localhost:${PUERTO}`);
 	console.log(r2Configurado() ? '  R2 configurado.' : '  R2 SIN configurar: las fotos fallarán.');
+	console.log(
+		alArrancar.ok
+			? '  Al día con la web.'
+			: '  No se pudo traer lo de la web. Se abre igual, pero revisa antes de publicar.',
+	);
 	console.log('\n  Para cerrar: el botón del panel, o esta ventana.\n');
 });
