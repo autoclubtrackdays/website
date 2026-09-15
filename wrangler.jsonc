@@ -1,0 +1,29 @@
+// Configuración del despliegue en Cloudflare.
+//
+// Este archivo existe sobre todo para que wrangler NO intente configurarse solo.
+// Cuando no encuentra configuración, entra en modo autoconfiguración: detecta
+// Astro, ejecuta `astro add cloudflare`, instala el adaptador y vuelve a
+// construir. Ese adaptador importa `renderForPrerender` de `astro/app`, que
+// Astro 7.2.4 no exporta, así que el build muere ahí. El propio wrangler avisa
+// de que la versión de Astro «is not officially supported» justo antes.
+//
+// Y no hace falta ningún adaptador: esto es un sitio estático. Las páginas ya
+// están generadas en dist/ y aquí solo hay que subirlas.
+{
+	// Tiene que ser exactamente el nombre del Worker que ya existe. Con otro
+	// nombre se crearía uno nuevo y el dominio seguiría sirviendo el viejo.
+	"name": "website",
+	"compatibility_date": "2026-09-15",
+
+	"assets": {
+		"directory": "./dist",
+
+		// Es lo que ya hace el sitio hoy: /catalogo responde 307 hacia /catalogo/.
+		// Las canónicas de todas las páginas apuntan a la forma con barra, así que
+		// cambiarlo desalinearía lo que se le ha dicho a Google.
+		"html_handling": "auto-trailing-slash"
+	}
+
+	// Sin `main`: no hay código de servidor, solo activos.
+	// Sin `not_found_handling`: no hay página 404 propia que servir.
+}

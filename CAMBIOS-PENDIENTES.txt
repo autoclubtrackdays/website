@@ -1,0 +1,149 @@
+CAMBIO PENDIENTE DE APLICAR: que el panel se traiga los cambios del otro ordenador
+Escrito el 15/09/2026. Todo va en un unico archivo: src/dashboard/servidor.mjs
+
+
+POR QUE
+-------
+
+Desde que el proyecto esta en dos ordenadores, los dos pueden dar de alta, editar o vender coches.
+El panel no trae nada de GitHub en ningun momento: Panel.bat solo hace `cd` y `npm run admin`, y el
+servidor solo ejecuta add, commit, push y un log para contar lo pendiente.
+
+Asi que en cuanto un ordenador publique y luego el otro lo intente, el push se rechaza por no ser
+avance rapido, y el panel enseña «El coche esta guardado en este ordenador, pero no se pudo enviar
+a la web» con el mensaje de git en ingles. No se pierde trabajo (el commit ya esta hecho en local)
+pero el panel se queda atascado ahi en cada intento, y quien lo use no puede salir sin abrir una
+terminal. Que es justo lo que el panel viene a evitar.
+
+Los conflictos de verdad seran raros: cada coche es su propio .txt, asi que dos maquinas tocando
+coches distintos se fusionan solas. Solo chocan si se edita el mismo coche en las dos, o si las dos
+cambian src/lib/destacados.ts, que es un archivo unico.
+
+Esto se probo entero en su dia contra un repositorio de mentira en /tmp: el caso normal (coches
+distintos) publica los dos sin commits de fusion, y el caso de conflicto aborta limpio.
+
+
+BLOQUE 1 de 3 — la funcion
+--------------------------
+
+Pegar JUSTO ANTES de esta linea (hoy es la 233):
+
+    /** Publica: add, commit y push. Devuelve la salida tal cual para poder leerla. */
+
+Esto:
+
+/**
+ * Trae lo que se haya publicado desde el otro ordenador.
+ *
+ * `--rebase` pone lo de aquí encima de lo de la web en lugar de fabricar un
+ * commit de fusión, y `--autostash` aparta lo que haya sin commitear: en el
+ * ordenador de desarrollo casi siempre hay código a medias, y sin eso el rebase
+ * se niega con «cannot rebase: You have unstaged changes».
+ *
+ * Si choca, deshace el rebase antes de devolver el error. Sin ese `--abort` el
+ * repositorio se queda a mitad de un rebase y el panel deja de funcionar hasta
+ * que alguien abra una terminal, que es justo lo que el panel viene a evitar.
+ *
+ * El plazo de espera es para el caso de estar sin red: git se quedaría colgado
+ * resolviendo el nombre y el panel no llegaría a abrir.
+ */
+async function traerCambios() {
+	try {
+		await ejecutar('git', ['pull', '--rebase', '--autostash'], { cwd: RAIZ, timeout: 20000 });
+		return { ok: true };
+	} catch (error) {
+		const { stdout: enConflicto } = await ejecutar(
+			'git',
+			['diff', '--name-only', '--diff-filter=U'],
+			{ cwd: RAIZ },
+		).catch(() => ({ stdout: '' }));
+
+		await ejecutar('git', ['rebase', '--abort'], { cwd: RAIZ }).catch(() => {});
+
+		return {
+			ok: false,
+			conflictos: enConflicto.trim().split('\n').filter(Boolean),
+			detalle: error.stderr?.trim() || error.message,
+		};
+	}
+}
+
+
+BLOQUE 2 de 3 — usarla antes de empujar
+---------------------------------------
+
+Dentro de publicar(), buscar esta linea (hoy es la 270):
+
+    const { stdout, stderr } = await ejecutar('git', ['push'], { cwd: RAIZ });
+
+Y pegar JUSTO ANTES:
+
+		// Antes de empujar, lo de la web. Si el otro ordenador publicó primero, sin
+		// esto el push se rechaza y el panel se queda atascado en el error.
+		const traido = await traerCambios();
+
+		if (!traido.ok) {
+			const cuales = traido.conflictos.length
+				? `\n\nSe pisan estos archivos:\n${traido.conflictos.map((c) => `  ${c}`).join('\n')}`
+				: `\n\n${traido.detalle}`;
+
+			return json(respuesta, 409, {
+				error:
+					'Se ha cambiado lo mismo desde el otro ordenador. Tu trabajo está guardado aquí, ' +
+					`pero no se ha publicado.${cuales}\n\nAvisa antes de seguir tocando estos coches.`,
+			});
+		}
+
+OJO: el orden importa. El pull va DESPUES del commit (para que lo local quede confirmado y el arbol
+limpio) y DESPUES del «No habia nada que publicar», pero ANTES del push.
+
+
+BLOQUE 3 de 3 — traer tambien al arrancar
+-----------------------------------------
+
+Al final del archivo (hoy linea 633), sustituir esto:
+
+servidor.listen(PUERTO, '127.0.0.1', () => {
+	console.log(`\n  Panel abierto en http://localhost:${PUERTO}`);
+	console.log(r2Configurado() ? '  R2 configurado.' : '  R2 SIN configurar: las fotos fallarán.');
+	console.log('\n  Para cerrar: el botón del panel, o esta ventana.\n');
+});
+
+Por esto:
+
+// Se arranca con lo último de la web, para no editar un coche que en el otro
+// ordenador ya se vendió. Si falla no se aborta: sin red se tiene que poder
+// seguir dando de alta coches; lo que no se puede es publicar a ciegas, y de eso
+// se encarga el mismo paso dentro de publicar().
+const alArrancar = await traerCambios();
+
+servidor.listen(PUERTO, '127.0.0.1', () => {
+	console.log(`\n  Panel abierto en http://localhost:${PUERTO}`);
+	console.log(r2Configurado() ? '  R2 configurado.' : '  R2 SIN configurar: las fotos fallarán.');
+	console.log(
+		alArrancar.ok
+			? '  Al día con la web.'
+			: '  No se pudo traer lo de la web. Se abre igual, pero revisa antes de publicar.',
+	);
+	console.log('\n  Para cerrar: el botón del panel, o esta ventana.\n');
+});
+
+
+COMO COMPROBAR QUE QUEDO BIEN
+-----------------------------
+
+  node --check src/dashboard/servidor.mjs      (tiene que pasar sin decir nada)
+  npm run admin                                 (tiene que poner «Al día con la web.»)
+
+Y que los tres detalles esten: --autostash, --abort y el timeout. Sin ellos:
+  sin --autostash  -> «cannot rebase: You have unstaged changes» si hay codigo a medias
+  sin --abort      -> el repositorio se queda a mitad de rebase y el panel deja de funcionar
+  sin timeout      -> sin red, git se cuelga y el panel no llega a abrir
+
+
+LO QUE ESTO NO ARREGLA
+----------------------
+
+Las fotos de R2 no estan versionadas. Si un ordenador borra un coche se borran sus fotos del bucket,
+y si el otro lo tenia y lo vuelve a guardar, el .txt reaparece con el push pero las fotos ya no
+existen y la galeria queda rota. La regla practica: no borrar coches en los dos sitios a la vez.
