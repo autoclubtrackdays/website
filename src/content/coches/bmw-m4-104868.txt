@@ -1,8 +1,8 @@
 Referencia: 104868
 Marca: BMW
 Modelo: M4
-Precio: 53900
-Precio financiado: 53800
+Precio: 49900
+Precio financiado: 49800
 Kilometros: 70500
 Fecha: 11/2017
 Combustible: Gasolina
