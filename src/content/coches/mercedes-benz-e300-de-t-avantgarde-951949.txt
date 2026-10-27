@@ -2,8 +2,8 @@ Referencia: 951949
 Marca: Mercedes-Benz
 Modelo: E300 de
 Version: T Avantgarde
-Precio: 37900
-Precio financiado: 37800
+Precio: 36500
+Precio financiado: 36400
 Kilometros: 64000
 Fecha: 02/2023
 Combustible: Híbrido enchufable

@@ -2,8 +2,8 @@ Referencia: 618241
 Marca: Porsche
 Modelo: Cayenne
 Version: S
-Precio: 14900
-Precio financiado: 14800
+Precio: 14500
+Precio financiado: 14400
 Kilometros: 119000
 Fecha: 10/2003
 Combustible: Gasolina

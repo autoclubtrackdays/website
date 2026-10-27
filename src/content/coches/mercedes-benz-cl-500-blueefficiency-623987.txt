@@ -2,8 +2,8 @@ Referencia: 623987
 Marca: Mercedes-Benz
 Modelo: CL 500
 Version: BlueEfficiency
-Precio: 24900
-Precio financiado: 24800
+Precio: 20900
+Precio financiado: 20800
 Kilometros: 196000
 Fecha: 09/2011
 Combustible: Gasolina

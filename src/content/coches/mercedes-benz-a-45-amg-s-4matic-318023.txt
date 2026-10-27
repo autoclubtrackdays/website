@@ -2,8 +2,8 @@ Referencia: 318023
 Marca: Mercedes-Benz
 Modelo: A 45 AMG
 Version: S 4Matic+
-Precio: 49900
-Precio financiado: 49800
+Precio: 48900
+Precio financiado: 48800
 Kilometros: 84941
 Fecha: 05/2021
 Combustible: Gasolina

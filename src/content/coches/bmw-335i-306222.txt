@@ -1,8 +1,7 @@
 Referencia: 306222
 Marca: BMW
 Modelo: 335i
-Precio: 17900
-Precio financiado: 17800
+Precio: 16500
 Kilometros: 201000
 Fecha: 05/2007
 Combustible: Gasolina
